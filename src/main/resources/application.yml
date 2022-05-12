@@ -1,3 +1,9 @@
+bot:
+  BOT_TOKEN: <5060428209:AAG_mGRO57BgUnWjJFI6a5oCHVNIpkRnhnQ>
+  BOT_USERNAME: <UA_DSNS_bot>
+server:
+  PORT: $PORT
+
 spring:
   main:
     allow-circular-references: true
