@@ -50,4 +50,28 @@ public class InlineButton {
     public InlineKeyboardMarkup getInlineWeaponsKeyboardMarkup(){
         return inlineWeaponsKeyboardMarkup();
     }
+    private InlineKeyboardMarkup inlineVolunteeringKeyboardMarkup(){
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Питання та відповіді").callbackData("askVolunteering").build()));
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        return inlineKeyboardMarkup;
+    }
+    public InlineKeyboardMarkup getInlineVolunteeringKeyboardMarkup(){
+        return inlineVolunteeringKeyboardMarkup();
+    }
+
+    private InlineKeyboardMarkup inlineQuestionsKeyboardMarkup(){
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("91").callbackData("91").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("92").callbackData("92").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("93").callbackData("93").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("94").callbackData("94").build()));
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        return inlineKeyboardMarkup;
+    }
+    public InlineKeyboardMarkup getInlineQuestionsKeyboardMarkup(){
+        return inlineQuestionsKeyboardMarkup();
+    }
 }

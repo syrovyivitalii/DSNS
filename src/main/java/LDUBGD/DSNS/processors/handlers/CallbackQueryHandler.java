@@ -1,9 +1,11 @@
-package LDUBGD.DSNS.handlers;
+package LDUBGD.DSNS.processors.handlers;
 
 import LDUBGD.DSNS.aid.CardiopulmonaryResuscitation;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.services.InlineButton;
+import LDUBGD.DSNS.services.Menu;
 import LDUBGD.DSNS.services.Start;
+import LDUBGD.DSNS.volunteering.Volunteering;
 import LDUBGD.DSNS.weapons.WeaponsAndAmmunition;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
@@ -21,6 +23,8 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
     WeaponsAndAmmunition weaponsAndAmmunition = new WeaponsAndAmmunition();
     InlineButton inlineButton = new InlineButton();
     Start start = new Start();
+    Volunteering volunteering = new Volunteering();
+    Menu menu = new Menu();
 
     public CallbackQueryHandler(MessageSender messageSender) {
         this.messageSender = messageSender;
@@ -121,6 +125,26 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
         }else if(callbackQuery.getData().equals("CompleteReview")){
             sendMessage.setText("Натисніть щоб перейти в Меню");
             sendMessage.setReplyMarkup(start.getKeyboardStart());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("askVolunteering")){
+            sendMessage.setText(volunteering.getVolunteeringQuestions());
+            sendMessage.setReplyMarkup(inlineButton.getInlineQuestionsKeyboardMarkup());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("91")){
+            sendMessage.setText(volunteering.getQuestionOne());
+            sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("92")){
+            sendMessage.setText(volunteering.getQuestionTwo());
+            sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("93")){
+            sendMessage.setText(volunteering.getQuestionThree());
+            sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("94")){
+            sendMessage.setText(volunteering.getQuestionFour());
+            sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
             messageSender.sendMessage(sendMessage);
         }
     }

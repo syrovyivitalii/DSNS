@@ -1,4 +1,4 @@
-package LDUBGD.DSNS.handlers;
+package LDUBGD.DSNS.processors.handlers;
 
 import LDUBGD.DSNS.actionsInEmergencies.ActionInEmergencies;
 import LDUBGD.DSNS.aid.*;
@@ -11,6 +11,7 @@ import LDUBGD.DSNS.services.Menu;
 import LDUBGD.DSNS.services.Start;
 import LDUBGD.DSNS.source.Source;
 import LDUBGD.DSNS.supportPlaces.PlacesOfSupport;
+import LDUBGD.DSNS.volunteering.Volunteering;
 import LDUBGD.DSNS.weapons.WeaponsAndAmmunition;
 import LDUBGD.DSNS.weather.Weather;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,7 @@ public class MessageHandler implements Handler<Message> {
     ActionInEmergencies actionInEmergencies = new ActionInEmergencies();
     WeaponsAndAmmunition weaponsAndAmmunition = new WeaponsAndAmmunition();
     InlineButton inlineButton = new InlineButton();
+    Volunteering volunteering = new Volunteering();
 
     @Override
     public void choose(Message message) {
@@ -545,6 +547,20 @@ public class MessageHandler implements Handler<Message> {
                 case "85":
                     sendMessage.setText(psychologicalHelp.getStupor());
                     sendMessage.setReplyMarkup(psychologicalHelp.getKeyboardReturnPsychologicalHelp());
+                    break;
+                //волонтерство
+                case "9":
+                    sendPhoto.setPhoto(new InputFile("http://www.visti.rovno.ua/img/650/zapishis-v-dobrovoltsi-z-tsivilnoho-zakhistu-dopom20220425_5166.jpg"));
+                    messageSender.sendPhoto(sendPhoto);
+                    sendOtherMessage.setText("\uD83D\uDC69\u200D\uD83D\uDE92Запишись в добровольці з цивільного захисту - допоможи країні❗️");
+                    sendOtherMessage.setReplyMarkup(menu.getKeyboardButtonMenu());
+                    messageSender.sendMessage(sendOtherMessage);
+                    sendMessage.setText(volunteering.getVolunteering());
+                    sendMessage.setReplyMarkup(inlineButton.getInlineVolunteeringKeyboardMarkup());
+                    break;
+                case "Інші питання":
+                    sendMessage.setText(volunteering.getVolunteeringQuestions());
+                    sendMessage.setReplyMarkup(inlineButton.getInlineQuestionsKeyboardMarkup());
                     break;
                 //зброя та боєприпаси: дії після знаходження
                 case "10":
