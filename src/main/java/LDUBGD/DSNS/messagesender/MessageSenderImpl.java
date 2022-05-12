@@ -29,7 +29,7 @@ public class MessageSenderImpl implements MessageSender {
             e.printStackTrace();
         }
     }
-
+    @Override
     public void sendPhoto(SendPhoto sendPhoto){
         try {
             dsnsBot.execute(sendPhoto);

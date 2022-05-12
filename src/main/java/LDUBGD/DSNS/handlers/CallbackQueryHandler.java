@@ -1,4 +1,4 @@
-package LDUBGD.DSNS.processors.handlers;
+package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.aid.CardiopulmonaryResuscitation;
 import LDUBGD.DSNS.messagesender.MessageSender;

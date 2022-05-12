@@ -1,4 +1,4 @@
-package LDUBGD.DSNS.processors.handlers;
+package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.actionsInEmergencies.ActionInEmergencies;
 import LDUBGD.DSNS.aid.*;
