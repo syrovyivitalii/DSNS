@@ -3,7 +3,6 @@ bot:
   BOT_USERNAME: <UA_DSNS_bot>
 server:
   PORT: $PORT
-
 spring:
   main:
     allow-circular-references: true
