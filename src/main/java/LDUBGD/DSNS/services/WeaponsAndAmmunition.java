@@ -1,4 +1,4 @@
-package LDUBGD.DSNS.weapons;
+package LDUBGD.DSNS.services;
 
 public class WeaponsAndAmmunition {
     private String actionsFindWeapons(){

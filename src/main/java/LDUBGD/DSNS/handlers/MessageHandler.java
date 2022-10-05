@@ -1,19 +1,19 @@
 package LDUBGD.DSNS.handlers;
 
-import LDUBGD.DSNS.actionsInEmergencies.ActionInEmergencies;
+import LDUBGD.DSNS.services.ActionInEmergencies;
 import LDUBGD.DSNS.aid.*;
-import LDUBGD.DSNS.emergenciesAndNews.OurFacebook;
+import LDUBGD.DSNS.services.OurFacebook;
 import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.psychologicalHelp.PsychologicalHelp;
+import LDUBGD.DSNS.services.PsychologicalHelp;
 import LDUBGD.DSNS.services.InlineButton;
 import LDUBGD.DSNS.services.Menu;
 import LDUBGD.DSNS.services.Start;
-import LDUBGD.DSNS.source.Source;
-import LDUBGD.DSNS.supportPlaces.PlacesOfSupport;
-import LDUBGD.DSNS.volunteering.Volunteering;
-import LDUBGD.DSNS.weapons.WeaponsAndAmmunition;
-import LDUBGD.DSNS.weather.Weather;
+import LDUBGD.DSNS.services.Source;
+import LDUBGD.DSNS.services.PlacesOfSupport;
+import LDUBGD.DSNS.services.Volunteering;
+import LDUBGD.DSNS.services.WeaponsAndAmmunition;
+import LDUBGD.DSNS.services.Weather;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -78,7 +78,11 @@ public class MessageHandler implements Handler<Message> {
                     ReplyKeyboardMarkup keyboardStart = start.getKeyboardStart();
                     sendMessage.setReplyMarkup(keyboardStart);
                     break;
-
+                //встановити місцезнаходження
+                case "/set_location":
+                    sendMessage.setText("Оберіть тип вашого пристрою \uD83D\uDC47");
+                    sendMessage.setReplyMarkup(inlineButton.getInlineTypeOfDeviceKeyboardMarkup());
+                    break;
                 //меню
                 case "Меню":
                     sendMessage.setText(menu.getMenu());
@@ -575,7 +579,7 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setReplyMarkup(menu.getKeyboardButtonMenu());
                     break;
                 default:
-                    sendMessage.setText("Не розумію");
+                    sendMessage.setText("Введено не коректні дані: '" + message.getText() + "' Спробуйте ще раз!");
             }
             //відправлення повідомлення
             messageSender.sendMessage(sendMessage);

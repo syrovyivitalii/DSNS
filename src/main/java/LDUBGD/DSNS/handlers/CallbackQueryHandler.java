@@ -5,8 +5,8 @@ import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.services.InlineButton;
 import LDUBGD.DSNS.services.Menu;
 import LDUBGD.DSNS.services.Start;
-import LDUBGD.DSNS.volunteering.Volunteering;
-import LDUBGD.DSNS.weapons.WeaponsAndAmmunition;
+import LDUBGD.DSNS.services.Volunteering;
+import LDUBGD.DSNS.services.WeaponsAndAmmunition;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -145,6 +145,88 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
         }else if (callbackQuery.getData().equals("94")){
             sendMessage.setText(volunteering.getQuestionFour());
             sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Мобільний пристрій")){
+            sendMessage.setText("Надішліть вашу геолокацію для подальшої обробки\uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Персональний комп'ютер")){
+            sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
+            sendMessage.setReplyMarkup(inlineButton.getInlineLocationKeyboardMarkup());
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("АР Крим")){
+            sendMessage.setText("Обрано місцезнаходження: АР Крим \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Вінницька")){
+            sendMessage.setText("Обрано місцезнаходження: Вінницька область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Волинська")){
+            sendMessage.setText("Обрано місцезнаходження: Волинська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Дніпропетровська")){
+            sendMessage.setText("Обрано місцезнаходження: Дніпропетровська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Донецька")){
+            sendMessage.setText("Обрано місцезнаходження: Донецька область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Житомирська")){
+            sendMessage.setText("Обрано місцезнаходження: Житомирська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Закарпатська")){
+            sendMessage.setText("Обрано місцезнаходження: Закарпатська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Запорізька")){
+            sendMessage.setText("Обрано місцезнаходження: Запорізька область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Івано-Франківська")){
+            sendMessage.setText("Обрано місцезнаходження: Івано-Франківська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Київська")){
+            sendMessage.setText("Обрано місцезнаходження: Київська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Кіровоградська")){
+            sendMessage.setText("Обрано місцезнаходження: Кіровоградська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Луганська")){
+            sendMessage.setText("Обрано місцезнаходження: Луганська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Львівська")){
+            sendMessage.setText("Обрано місцезнаходження: Львівська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Миколаїівська")){
+            sendMessage.setText("Обрано місцезнаходження: Миколаїівська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Одеська")){
+            sendMessage.setText("Обрано місцезнаходження: Одеська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Полтавська")){
+            sendMessage.setText("Обрано місцезнаходження: Полтавська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Рівненська")){
+            sendMessage.setText("Обрано місцезнаходження: Рівненська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Сумська")){
+            sendMessage.setText("Обрано місцезнаходження: Сумська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Тернопільська")){
+            sendMessage.setText("Обрано місцезнаходження: Тернопільська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Харківська")){
+            sendMessage.setText("Обрано місцезнаходження: Харківська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Херсонська")){
+            sendMessage.setText("Обрано місцезнаходження: Херсонська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Хмельницька")){
+            sendMessage.setText("Обрано місцезнаходження: Хмельницька область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Черкаська")){
+            sendMessage.setText("Обрано місцезнаходження: Черкаська область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Чернівецька")){
+            sendMessage.setText("Обрано місцезнаходження: Чернівецька область \uD83D\uDCCD");
+            messageSender.sendMessage(sendMessage);
+        }else if (callbackQuery.getData().equals("Чернігівська")){
+            sendMessage.setText("Обрано місцезнаходження: Чернігівська область \uD83D\uDCCD");
             messageSender.sendMessage(sendMessage);
         }
     }

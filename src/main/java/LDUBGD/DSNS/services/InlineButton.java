@@ -74,4 +74,50 @@ public class InlineButton {
     public InlineKeyboardMarkup getInlineQuestionsKeyboardMarkup(){
         return inlineQuestionsKeyboardMarkup();
     }
+
+    private InlineKeyboardMarkup inlineTypeOfDeviceKeyboardMarkup(){
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Мобільний пристрій").callbackData("Мобільний пристрій").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Персональний комп'ютер").callbackData("Персональний комп'ютер").build()));
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        return inlineKeyboardMarkup;
+    }
+    public InlineKeyboardMarkup getInlineTypeOfDeviceKeyboardMarkup(){
+        return inlineTypeOfDeviceKeyboardMarkup();
+    }
+    private InlineKeyboardMarkup inlineLocationKeyboardMarkup(){
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("АР Крим").callbackData("АР Крим").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Вінницька").callbackData("Вінницька").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Волинська").callbackData("Волинська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Дніпропетровська").callbackData("Дніпропетровська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Донецька").callbackData("Донецька").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Житомирська").callbackData("Житомирська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Закарпатська").callbackData("Закарпатська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Запорізька").callbackData("Запорізька").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Івано-Франківська").callbackData("Івано-Франківська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Київська").callbackData("Київська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Кіровоградська").callbackData("Кіровоградська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Луганська").callbackData("Луганська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Львівська").callbackData("Львівська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Миколаїівська").callbackData("Миколаїівська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Одеська").callbackData("Одеська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Полтавська").callbackData("Полтавська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Рівненська").callbackData("Рівненська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Сумська").callbackData("Сумська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Тернопільська").callbackData("Тернопільська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Харківська").callbackData("Харківська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Херсонська").callbackData("Херсонська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Хмельницька").callbackData("Хмельницька").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Черкаська").callbackData("Черкаська").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Чернівецька").callbackData("Чернівецька").build()));
+        keyboard.add(Collections.singletonList(InlineKeyboardButton.builder().text("Чернігівська").callbackData("Чернігівська").build()));
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        return inlineKeyboardMarkup;
+    }
+    public InlineKeyboardMarkup getInlineLocationKeyboardMarkup(){
+        return inlineLocationKeyboardMarkup();
+    }
 }
