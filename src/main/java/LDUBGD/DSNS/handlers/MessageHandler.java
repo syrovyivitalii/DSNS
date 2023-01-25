@@ -1,5 +1,9 @@
 package LDUBGD.DSNS.handlers;
 
+import LDUBGD.DSNS.model.Hromady;
+import LDUBGD.DSNS.model.UserLogin;
+import LDUBGD.DSNS.repository.HromadyRepository;
+import LDUBGD.DSNS.repository.UserLoginRepository;
 import LDUBGD.DSNS.services.ActionInEmergencies;
 import LDUBGD.DSNS.aid.*;
 import LDUBGD.DSNS.services.OurFacebook;
@@ -14,16 +18,30 @@ import LDUBGD.DSNS.services.PlacesOfSupport;
 import LDUBGD.DSNS.services.Volunteering;
 import LDUBGD.DSNS.services.WeaponsAndAmmunition;
 import LDUBGD.DSNS.services.Weather;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 
+import java.util.List;
+import java.util.Optional;
+
 @Component
+@Slf4j
 public class MessageHandler implements Handler<Message> {
     private final MessageSender messageSender;
+
+    @Autowired
+    UserLoginRepository userLoginRepository;
+
+    @Autowired
+    HromadyRepository hromadyRepository;
 
     public MessageHandler(MessageSender messageSender) {
         this.messageSender = messageSender;
@@ -54,9 +72,43 @@ public class MessageHandler implements Handler<Message> {
 
     @Override
     public void choose(Message message) {
-        if (message.hasText()){
+        Long userId = message.getFrom().getId();
+        Optional<UserLogin> optionalUserLogin = userLoginRepository.findByTelegramId(userId);
+        UserLogin userLogin;
+        if(!optionalUserLogin.isPresent()){
+            userLogin = new UserLogin(userId);
+        }else {
+            userLogin = optionalUserLogin.get();
+        }
+        if(message.hasLocation()){
+            Location location = message.getLocation();
+            userLogin.setX(location.getLongitude());
+            userLogin.setY(location.getLatitude());
+            List<Hromady> hromady = hromadyRepository.hromada(userLogin.getX(), userLogin.getY());
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(String.valueOf(message.getChatId()));
+            if(!hromady.isEmpty()){
+                Hromady hromada = hromady.get(0);
+                userLogin.setHromada(hromada);
+                sendMessage.setText(String.format("%s%n%s",hromada.getRayon(), hromada.getHromada()));
+            }else {
+                sendMessage.setText(String.format("Громаду не знайдено (%s:%s)",userLogin.getX(), userLogin.getY()));
+            }
+            messageSender.sendMessage(sendMessage);
+            log.info(message.getLocation().toString());
+            userLoginRepository.save(userLogin);
+        }
+        if(message.hasContact()){
+            Contact contact = message.getContact();
+            userLogin.setPhone(contact.getPhoneNumber());
+            userLogin.setFirstName(contact.getFirstName());
+            userLogin.setLastName(contact.getLastName());
+            userLoginRepository.save(userLogin);
+            log.info(message.getContact().toString());
+        }
+        if (message.hasText()) {
             //виведення повідомлення користувача в консоль
-            System.out.println(message.getText());
+            log.info("{}:{}", userId, message.getText());
             //взаємодія з конкретним чатом
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(String.valueOf(message.getChatId()));
@@ -70,18 +122,28 @@ public class MessageHandler implements Handler<Message> {
             sengPhotoTwo.setChatId(String.valueOf(message.getChatId()));
             sendPhotoThree.setChatId(String.valueOf(message.getChatId()));
 
-            switch (message.getText()){
+            switch (message.getText()) {
 
                 //старт програми
                 case "/start":
                     sendMessage.setText(start.getStart());
-                    ReplyKeyboardMarkup keyboardStart = start.getKeyboardStart();
+                    ReplyKeyboardMarkup keyboardStart;
+                    if (optionalUserLogin.isPresent()){
+                        keyboardStart = start.getKeyboardStart();
+                    }else {
+                        keyboardStart = start.keyboardNewStart();
+                    }
                     sendMessage.setReplyMarkup(keyboardStart);
                     break;
                 //встановити місцезнаходження
                 case "/set_location":
                     sendMessage.setText("Оберіть тип вашого пристрою \uD83D\uDC47");
                     sendMessage.setReplyMarkup(inlineButton.getInlineTypeOfDeviceKeyboardMarkup());
+                    break;
+                case "Поділитись розташуванням":
+                    sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
+                    sendMessage.setReplyMarkup(inlineButton.getInlineLocationKeyboardMarkup());
+                    messageSender.sendMessage(sendMessage);
                     break;
                 //меню
                 case "Меню":
@@ -363,8 +425,8 @@ public class MessageHandler implements Handler<Message> {
                 // перша допомога
                 case "7":
                     sendMessage.setText("\uD83E\uDD15 Перша допомога");
-                   ReplyKeyboardMarkup keyboardFirstAidMenu = firstAidMenu.getKeyboardAidMenu();
-                   sendMessage.setReplyMarkup(keyboardFirstAidMenu);
+                    ReplyKeyboardMarkup keyboardFirstAidMenu = firstAidMenu.getKeyboardAidMenu();
+                    sendMessage.setReplyMarkup(keyboardFirstAidMenu);
                     break;
                 case "Серцево-легенева реанімація\uD83E\uDEC0\uD83E\uDEC1️":
                     sendMessage.setText(CPR.get_CPR());
@@ -462,7 +524,7 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setText(boneInjuries.getDislocation());
                     break;
                 //травми грудної клітки
-                case "Травми грудної клітки\uD83D\uDC55":{
+                case "Травми грудної клітки\uD83D\uDC55": {
                     sendMessage.setText(chestInjury.getChestInjury());
                     ReplyKeyboardMarkup keyboardChest = chestInjury.getKeyboardChest();
                     sendMessage.setReplyMarkup(keyboardChest);

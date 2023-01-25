@@ -1,6 +1,7 @@
 package LDUBGD.DSNS.services;
 
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.util.ArrayList;
@@ -29,6 +30,32 @@ public class Start {
         //створюємо перший рядок
         KeyboardRow keyboardRow = new KeyboardRow();
         keyboardRow.add("Меню");
+        KeyboardButton keyboardButton1 = new KeyboardButton("Поділитись розташуванням");
+        keyboardButton1.setRequestLocation(true);
+        keyboardRow.add(keyboardButton1);
+        //додаємо рядок в наш список
+        keyboardRows.add(keyboardRow);
+        //встановлюємо цей список нашій клавіатурі
+        replyKeyboardMarkup.setKeyboard(keyboardRows);
+        return replyKeyboardMarkup;
+    }
+
+    public ReplyKeyboardMarkup keyboardNewStart(){
+        //створюємо клавіатуру
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        replyKeyboardMarkup.setOneTimeKeyboard(false);
+        //створюємо список рядків клавіатури
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+        //створюємо перший рядок
+        KeyboardRow keyboardRow = new KeyboardRow();
+        KeyboardButton keyboardContact = new KeyboardButton("Поділитись номерком");
+        keyboardContact.setRequestContact(true);
+        KeyboardButton keyboardButton1 = new KeyboardButton("Поділитись розташуванням");
+        keyboardButton1.setRequestLocation(true);
+        keyboardRow.add(keyboardButton1);
+        keyboardRow.add(keyboardContact);
         //додаємо рядок в наш список
         keyboardRows.add(keyboardRow);
         //встановлюємо цей список нашій клавіатурі
