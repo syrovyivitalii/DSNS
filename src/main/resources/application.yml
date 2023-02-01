@@ -10,9 +10,9 @@ spring:
   # Database configuration
   datasource:
 #    driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://10.114.200.41:5432/dsns_bot
-    username: postgres
-    password: bgd
+    url: jdbc:postgresql://10.44.64.30:5432/dsns_bot
+    username: root
+    password: 2143
   jpa:
   # PotGIS configuration
     show-sql: true

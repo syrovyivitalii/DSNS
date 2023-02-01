@@ -13,12 +13,12 @@ public class DSNSBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "UA_DSNS_bot";
+        return "dsns_ua_test_bot";
     }
 
     @Override
     public String getBotToken() {
-        return "5060428209:AAG_mGRO57BgUnWjJFI6a5oCHVNIpkRnhnQ";
+        return "5847217095:AAHIz8SbaDLrxgWgrk2MjFZvJFdJ2O-V63k";
     }
 
     @Override
