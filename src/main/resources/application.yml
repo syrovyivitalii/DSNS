@@ -1,9 +1,15 @@
-
 bot:
-  BOT_TOKEN: <5060428209:AAG_mGRO57BgUnWjJFI6a5oCHVNIpkRnhnQ>
-  BOT_USERNAME: <UA_DSNS_bot>
-server:
-  PORT: $PORT
+  BOT_TOKEN: "6057005845:AAG2z37cdoWOJOIR7rSGzNF5_QV-7yyrjrU"
+  BOT_USERNAME: "UA_DSNS_01_bot"
+#  BOT_TOKEN: <5060428209:AAG_mGRO57BgUnWjJFI6a5oCHVNIpkRnhnQ>
+#  BOT_USERNAME: <UA_DSNS_bot>
+alarm:
+  baseurl: "https://api.ukrainealarm.com/api/v3"
+  key: "c8040565:eae8e82b7f066f0c64effb5b6b1b5d4e"
+  fixedRate: 30_000
+#todo Потрібно ????
+#server:
+#  PORT: $PORT
 spring:
   main:
     allow-circular-references: true

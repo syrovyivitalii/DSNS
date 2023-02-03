@@ -6,6 +6,8 @@ import LDUBGD.DSNS.repository.FirstAidRepository;
 import LDUBGD.DSNS.repository.HromadyRepository;
 import LDUBGD.DSNS.repository.ServiceRepository;
 import LDUBGD.DSNS.repository.VolunteeringRepository;
+import LDUBGD.DSNS.model.Community;
+import LDUBGD.DSNS.repository.CommunityRepository;
 import LDUBGD.DSNS.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,7 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
     @Autowired
     private ServiceRepository serviceRepository;
 
+    private CommunityRepository communityRepository;
     public CallbackQueryHandler(MessageSender messageSender) {
         this.messageSender = messageSender;
     }

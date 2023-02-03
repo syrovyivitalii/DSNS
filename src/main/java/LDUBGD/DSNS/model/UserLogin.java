@@ -1,6 +1,5 @@
 package LDUBGD.DSNS.model;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,20 +14,22 @@ public class UserLogin {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String phone;
-    private double x;
-    private double y;
+    private Double x;
+    private Double y;
     private Long telegramId;
+    private Long chatId;
     private String firstName;
     private String lastName;
     @ManyToOne
-    @JoinColumn(name = "hromada_id")
-    private Hromady hromada;
+    @JoinColumn(name = "region_id")
+    private Community region;
 
     public UserLogin() {
     }
 
-    public UserLogin(Long telegramId) {
+    public UserLogin(Long telegramId, Long chatId) {
         this.telegramId = telegramId;
+        this.chatId = chatId;
     }
 
 }

@@ -2,23 +2,38 @@ package LDUBGD.DSNS;
 
 import LDUBGD.DSNS.processors.Processor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class DSNSBot extends TelegramLongPollingBot {
+
+    @Value("${bot.BOT_TOKEN}")
+    private String botToken;
+
+    @Value("${bot.BOT_USERNAME}")
+    private String botUsername;
     private Processor processor;
 
 
     @Override
     public String getBotUsername() {
-        return "dsns_ua_test_bot";
+//        return "UA_DSNS_bot";
+        return botUsername;
     }
 
     @Override
     public String getBotToken() {
-        return "5847217095:AAHIz8SbaDLrxgWgrk2MjFZvJFdJ2O-V63k";
+//         BOT_TOKEN = "5060428209:AAG_mGRO57BgUnWjJFI6a5oCHVNIpkRnhnQ";
+        return botToken;
+    }
+
+//    todo Перевірити???
+    @Override
+    public void onRegister() {
+        super.onRegister();
     }
 
     @Override

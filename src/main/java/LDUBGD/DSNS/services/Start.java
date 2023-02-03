@@ -30,9 +30,11 @@ public class Start {
         //створюємо перший рядок
         KeyboardRow keyboardRow = new KeyboardRow();
         keyboardRow.add("Меню");
-        KeyboardButton keyboardButton1 = new KeyboardButton("Поділитись розташуванням");
-        keyboardButton1.setRequestLocation(true);
-        keyboardRow.add(keyboardButton1);
+        KeyboardButton keyboardButtonLocation = new KeyboardButton("Поділитись розташуванням");
+        keyboardButtonLocation.setRequestLocation(true);
+        keyboardRow.add(keyboardButtonLocation);
+        KeyboardButton keyboardButtonGetHromada = new KeyboardButton("Моя громада");
+        keyboardRow.add(keyboardButtonGetHromada);
         //додаємо рядок в наш список
         keyboardRows.add(keyboardRow);
         //встановлюємо цей список нашій клавіатурі
@@ -50,12 +52,13 @@ public class Start {
         List<KeyboardRow> keyboardRows = new ArrayList<>();
         //створюємо перший рядок
         KeyboardRow keyboardRow = new KeyboardRow();
-        KeyboardButton keyboardContact = new KeyboardButton("Поділитись номерком");
-        keyboardContact.setRequestContact(true);
+        keyboardRow.add("Меню");
+//        KeyboardButton keyboardContact = new KeyboardButton("Поділитись номерком");
+//        keyboardContact.setRequestContact(true);
+//        keyboardRow.add(keyboardContact);
         KeyboardButton keyboardButton1 = new KeyboardButton("Поділитись розташуванням");
         keyboardButton1.setRequestLocation(true);
         keyboardRow.add(keyboardButton1);
-        keyboardRow.add(keyboardContact);
         //додаємо рядок в наш список
         keyboardRows.add(keyboardRow);
         //встановлюємо цей список нашій клавіатурі
