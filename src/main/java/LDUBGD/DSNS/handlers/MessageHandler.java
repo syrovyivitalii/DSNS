@@ -2,10 +2,13 @@ package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.model.Hromady;
+import LDUBGD.DSNS.model.Community;
 import LDUBGD.DSNS.model.UserLogin;
 import LDUBGD.DSNS.repository.*;
-import LDUBGD.DSNS.services.*;
+import LDUBGD.DSNS.services.InlineButton;
+import LDUBGD.DSNS.services.ReplyKeyboard;
+import LDUBGD.DSNS.services.ScheduledTasks;
+import LDUBGD.DSNS.services.Start;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +33,6 @@ public class MessageHandler implements Handler<Message> {
     @Autowired
     UserLoginRepository userLoginRepository;
 
-    @Autowired
-    HromadyRepository hromadyRepository;
 
     @Autowired
     FirstAidRepository firstAidRepository;
@@ -579,7 +580,8 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setText(dBElectricBurns);
                     break;
                 case "Обмороження\uD83E\uDD76":
-                    sendMessage.setText(burns.getFrostbite());
+                    String burns = firstAidRepository.getBurns();
+                    sendMessage.setText(burns);
                     break;
                 //вогневе поранення
                 case "Вогнепальне поранення\uD83D\uDD2B":

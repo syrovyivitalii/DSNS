@@ -1,14 +1,13 @@
 package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.model.Hromady;
+import LDUBGD.DSNS.repository.CommunityRepository;
 import LDUBGD.DSNS.repository.FirstAidRepository;
-import LDUBGD.DSNS.repository.HromadyRepository;
 import LDUBGD.DSNS.repository.ServiceRepository;
 import LDUBGD.DSNS.repository.VolunteeringRepository;
-import LDUBGD.DSNS.model.Community;
-import LDUBGD.DSNS.repository.CommunityRepository;
-import LDUBGD.DSNS.services.*;
+import LDUBGD.DSNS.services.InlineButton;
+import LDUBGD.DSNS.services.ReplyKeyboard;
+import LDUBGD.DSNS.services.Start;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
@@ -19,8 +18,6 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
-import java.util.List;
-
 @Component
 public class CallbackQueryHandler implements Handler <CallbackQuery> {
     private final MessageSender messageSender;
@@ -28,9 +25,6 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
     Start start = new Start();
 
     ReplyKeyboard replyKeyboard = new ReplyKeyboard();
-
-    @Autowired
-    private HromadyRepository hromadyRepository;
 
     @Autowired
     VolunteeringRepository volunteeringRepository;
@@ -181,7 +175,7 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
             messageSender.sendMessage(sendMessage);
         }else if (callbackQuery.getData().equals("Мобільний пристрій")){
 //            Optional<Hromady> hromadyList = hromadyRepository.findById(252);
-            List<Hromady> hromada = hromadyRepository.hromada(24.621005, 49.245382);
+//            List<Hromady> hromada = hromadyRepository.hromada(24.621005, 49.245382);
             sendMessage.setText("Надішліть вашу геолокацію для подальшої обробки\uD83D\uDCCD");
             messageSender.sendMessage(sendMessage);
         }else if (callbackQuery.getData().equals("Персональний комп'ютер")){
