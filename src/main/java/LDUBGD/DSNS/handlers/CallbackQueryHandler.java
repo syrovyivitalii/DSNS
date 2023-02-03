@@ -2,10 +2,9 @@ package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.aid.CardiopulmonaryResuscitation;
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.model.Hromady;
-import LDUBGD.DSNS.repository.HromadyRepository;
+import LDUBGD.DSNS.model.Community;
+import LDUBGD.DSNS.repository.CommunityRepository;
 import LDUBGD.DSNS.services.*;
-import org.geolatte.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
@@ -17,7 +16,6 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 public class CallbackQueryHandler implements Handler <CallbackQuery> {
@@ -29,7 +27,7 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
     Volunteering volunteering = new Volunteering();
     Menu menu = new Menu();
     @Autowired
-    private HromadyRepository hromadyRepository;
+    private CommunityRepository communityRepository;
     public CallbackQueryHandler(MessageSender messageSender) {
         this.messageSender = messageSender;
     }
@@ -151,8 +149,6 @@ public class CallbackQueryHandler implements Handler <CallbackQuery> {
             sendMessage.setReplyMarkup(volunteering.getKeyboardVolunteering());
             messageSender.sendMessage(sendMessage);
         }else if (callbackQuery.getData().equals("Мобільний пристрій")){
-//            Optional<Hromady> hromadyList = hromadyRepository.findById(252);
-            List<Hromady> hromada = hromadyRepository.hromada(24.621005, 49.245382);
             sendMessage.setText("Надішліть вашу геолокацію для подальшої обробки\uD83D\uDCCD");
             messageSender.sendMessage(sendMessage);
         }else if (callbackQuery.getData().equals("Персональний комп'ютер")){

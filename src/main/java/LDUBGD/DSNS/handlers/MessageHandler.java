@@ -1,23 +1,14 @@
 package LDUBGD.DSNS.handlers;
 
-import LDUBGD.DSNS.model.Hromady;
+import LDUBGD.DSNS.model.Community;
 import LDUBGD.DSNS.model.UserLogin;
-import LDUBGD.DSNS.repository.HromadyRepository;
+import LDUBGD.DSNS.repository.CommunityRepository;
 import LDUBGD.DSNS.repository.UserLoginRepository;
-import LDUBGD.DSNS.services.ActionInEmergencies;
+import LDUBGD.DSNS.services.*;
 import LDUBGD.DSNS.aid.*;
-import LDUBGD.DSNS.services.OurFacebook;
 import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.services.PsychologicalHelp;
-import LDUBGD.DSNS.services.InlineButton;
-import LDUBGD.DSNS.services.Menu;
-import LDUBGD.DSNS.services.Start;
-import LDUBGD.DSNS.services.Source;
-import LDUBGD.DSNS.services.PlacesOfSupport;
-import LDUBGD.DSNS.services.Volunteering;
-import LDUBGD.DSNS.services.WeaponsAndAmmunition;
-import LDUBGD.DSNS.services.Weather;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -35,13 +26,17 @@ import java.util.Optional;
 @Component
 @Slf4j
 public class MessageHandler implements Handler<Message> {
+    @Getter
     private final MessageSender messageSender;
 
     @Autowired
     UserLoginRepository userLoginRepository;
 
     @Autowired
-    HromadyRepository hromadyRepository;
+    CommunityRepository communityRepository;
+
+    @Autowired
+    ScheduledTasks scheduledTasks;
 
     public MessageHandler(MessageSender messageSender) {
         this.messageSender = messageSender;
@@ -75,30 +70,33 @@ public class MessageHandler implements Handler<Message> {
         Long userId = message.getFrom().getId();
         Optional<UserLogin> optionalUserLogin = userLoginRepository.findByTelegramId(userId);
         UserLogin userLogin;
-        if(!optionalUserLogin.isPresent()){
-            userLogin = new UserLogin(userId);
-        }else {
+        if (!optionalUserLogin.isPresent()) {
+            userLogin = new UserLogin(userId, message.getChatId());
+        } else {
             userLogin = optionalUserLogin.get();
+            if(userLogin.getChatId() == null){
+                userLogin.setChatId(message.getChatId());
+            }
         }
-        if(message.hasLocation()){
+        if (message.hasLocation()) {
             Location location = message.getLocation();
             userLogin.setX(location.getLongitude());
             userLogin.setY(location.getLatitude());
-            List<Hromady> hromady = hromadyRepository.hromada(userLogin.getX(), userLogin.getY());
+            List<Community> community = communityRepository.community(userLogin.getX(), userLogin.getY());
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(String.valueOf(message.getChatId()));
-            if(!hromady.isEmpty()){
-                Hromady hromada = hromady.get(0);
-                userLogin.setHromada(hromada);
-                sendMessage.setText(String.format("%s%n%s",hromada.getRayon(), hromada.getHromada()));
-            }else {
-                sendMessage.setText(String.format("Громаду не знайдено (%s:%s)",userLogin.getX(), userLogin.getY()));
+            if (!community.isEmpty()) {
+                Community hromada = community.get(0);
+                userLogin.setRegion(hromada);
+                sendMessage.setText(String.format("%s%n%s", hromada.getDistrict(), hromada.getCommunity()));
+            } else {
+                sendMessage.setText(String.format("Громаду не знайдено (%s:%s)", userLogin.getX(), userLogin.getY()));
             }
             messageSender.sendMessage(sendMessage);
             log.info(message.getLocation().toString());
             userLoginRepository.save(userLogin);
         }
-        if(message.hasContact()){
+        if (message.hasContact()) {
             Contact contact = message.getContact();
             userLogin.setPhone(contact.getPhoneNumber());
             userLogin.setFirstName(contact.getFirstName());
@@ -128,9 +126,9 @@ public class MessageHandler implements Handler<Message> {
                 case "/start":
                     sendMessage.setText(start.getStart());
                     ReplyKeyboardMarkup keyboardStart;
-                    if (optionalUserLogin.isPresent()){
+                    if (optionalUserLogin.isPresent()) {
                         keyboardStart = start.getKeyboardStart();
-                    }else {
+                    } else {
                         keyboardStart = start.keyboardNewStart();
                     }
                     sendMessage.setReplyMarkup(keyboardStart);
@@ -138,12 +136,37 @@ public class MessageHandler implements Handler<Message> {
                 //встановити місцезнаходження
                 case "/set_location":
                     sendMessage.setText("Оберіть тип вашого пристрою \uD83D\uDC47");
+//                    start.getKeyboardStart();
                     sendMessage.setReplyMarkup(inlineButton.getInlineTypeOfDeviceKeyboardMarkup());
                     break;
                 case "Поділитись розташуванням":
+                    log.info("isUserChat :{}",message.getChat().isUserChat());
                     sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
                     sendMessage.setReplyMarkup(inlineButton.getInlineLocationKeyboardMarkup());
                     messageSender.sendMessage(sendMessage);
+                    break;
+                case "Моя громада":
+                    if (!optionalUserLogin.isPresent()) {
+                        return;
+                    } else {
+                        userLogin = optionalUserLogin.get();
+                    }
+                    sendMessage.setChatId(String.valueOf(message.getChatId()));
+                    Community hromada = userLogin.getRegion();
+                    sendMessage.setText(String.format("%s%n%s%n%s",
+                            hromada.getDistrict(),
+                            hromada.getCommunity(),
+                            scheduledTasks.getAlert("351")));
+                    // TODO: 03.02.23 Відображення контурів громади 
+//                    SendPhoto sendPhoto = SendPhoto.builder()
+//                            .chatId(user.getChatId())
+//                            .photo(new InputFile(getJpg(),"dd"))
+////                                .caption(caption)
+////                                .parseMode(ParseMode.HTML)
+//                            .build();
+                    sendPhoto.setPhoto(new InputFile(scheduledTasks.getJpg(),"dd"));
+
+                    messageSender.sendPhoto(sendPhoto);
                     break;
                 //меню
                 case "Меню":
