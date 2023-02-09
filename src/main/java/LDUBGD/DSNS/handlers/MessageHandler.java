@@ -160,7 +160,7 @@ public class MessageHandler implements Handler<Message> {
 ////                                .caption(caption)
 ////                                .parseMode(ParseMode.HTML)
 //                            .build();
-                    sendPhoto.setPhoto(new InputFile(scheduledTasks.getJpg(),"dd"));
+                    sendPhoto.setPhoto(new InputFile(scheduledTasks.getJpg(hromada.getId()),"dd"));
 
                     messageSender.sendPhoto(sendPhoto);
                     break;

@@ -51,6 +51,8 @@ public class ScheduledTasks {
 
     @Value("${alarm.key}")
     private String alarmKey;
+    @Value("${alarm.geoserver}")
+    private String geoserver;
 
     AlertStatus lastAlertStatus = new AlertStatus();
     List<Alert> lastAlerts = new ArrayList<>();
@@ -134,30 +136,33 @@ public class ScheduledTasks {
     }
 
 
-    public InputStream getJpg() {
+    public InputStream getJpg(int regionId) {
         try {
             CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+            String repositoryRegionBBox = communityRepository.getRegionBBox(regionId);
 
 //            log.info(new UrlEncodedFormEntity(urlParameters).toString());
-            HttpGet request = new HttpGet("http://10.44.64.30:8088/geoserver/topp/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=topp%3Acommunity&exceptions=application%2Fvnd.ogc.se_inimage&FEATUREID=978&SRS=EPSG%3A4326&WIDTH=600&HEIGHT=600&BBOX=23.92547607421875%2C49.24346923828125%2C24.74945068359375%2C50.06744384765625");
+//            HttpGet request = new HttpGet("http://10.44.64.30:8088/geoserver/topp/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=topp%3Acommunity&exceptions=application%2Fvnd.ogc.se_inimage&FEATUREID=978&SRS=EPSG%3A4326&WIDTH=600&HEIGHT=600&BBOX=23.92547607421875%2C49.24346923828125%2C24.74945068359375%2C50.06744384765625");
 //            HttpGet request = new HttpGet("http://10.44.64.30:8088/geoserver/topp/wms");
+            HttpGet request = new HttpGet();
 //                    "?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=topp%3Acommunity&exceptions=application%2Fvnd.ogc.se_inimage&FEATUREID=978&SRS=EPSG%3A4326&WIDTH=600&HEIGHT=600&BBOX=23.92547607421875%2C49.24346923828125%2C24.74945068359375%2C50.06744384765625");
-            URI uri = new URIBuilder(request.getURI())
+            URI uri = new URIBuilder(geoserver)
                     .addParameter("SERVICE","WMS")
                     .addParameter("VERSION", "1.1.1")
                     .addParameter("REQUEST", "GetMap")
-                    .addParameter("FORMAT", "image/jpeg")
+                    .addParameter("FORMAT", "image/png")
                     .addParameter("TRANSPARENT", "true")
                     .addParameter("STYLES", "")
                     .addParameter("LAYERS", "topp:community")
                     .addParameter("exceptions", "application/vnd.ogc.se_inimage")
-                    .addParameter("FEATUREID", "978")
+                    .addParameter("FEATUREID", "1217")
                     .addParameter("SRS", "EPSG:4326")
                     .addParameter("WIDTH", "768")
                     .addParameter("HEIGHT", "339")
+                    .addParameter("BBOX", repositoryRegionBBox)
                     .build();
-//            request.setURI(uri);
-            request.addHeader("content-type", "image/jpeg");
+            request.setURI(uri);
+            request.addHeader("content-type", "image/png");
             HttpResponse response = null;
 
             response = httpClient.execute(request);
