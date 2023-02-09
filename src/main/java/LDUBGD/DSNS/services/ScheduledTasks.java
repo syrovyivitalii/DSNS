@@ -4,6 +4,7 @@ import LDUBGD.DSNS.DSNSBot;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.model.*;
 import LDUBGD.DSNS.repository.CommunityRepository;
+import LDUBGD.DSNS.repository.RegionsRepository;
 import LDUBGD.DSNS.repository.UserLoginRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
@@ -30,14 +31,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 @Slf4j
 public class ScheduledTasks {
+    @Autowired
+    private RegionsRepository regionsRepository;
     @Autowired
     private UserLoginRepository userLoginRepository;
     @Autowired
@@ -58,10 +58,18 @@ public class ScheduledTasks {
     private String alarmKey;
     @Value("${alarm.geoserver}")
     private String geoserver;
+    @Value("${alarm.imgHeight}")
+    private long imgHeight = 600;
+
 
     AlertStatus lastAlertStatus = new AlertStatus();
     List<Alert> lastAlerts = new ArrayList<>();
 
+    /**
+     * Формує заголовки HTTP запиту
+     *
+     * @return
+     */
     private HttpEntity<String> getHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorizatio" +
@@ -89,6 +97,13 @@ public class ScheduledTasks {
         return true;
     }
 
+    /**
+     * Перетворює дату з формату yyyy-MM-dd HH:mm:ss у формат dd.MM.yyyy HH:mm:ss
+     * 2023-02-04 15:35:50 -> 09.02.2023 20:26:38
+     *
+     * @param dt
+     * @return
+     */
     private String convertDate(String dt) {
         //yyyy-mm-ddThh:mm:ss.sssZ
         dt = dt.toLowerCase().replace("t", " ").replace("z", "");
@@ -106,6 +121,12 @@ public class ScheduledTasks {
         return dt;
     }
 
+    /**
+     * Отримати поточний стан по регіону
+     *
+     * @param regId
+     * @return
+     */
     public String getAlert(String regId) {
         ResponseEntity<Alert[]> responseEntity = restTemplate.exchange("/alerts/" + regId, HttpMethod.GET, getHeaders(), Alert[].class);
         if (responseEntity.getStatusCode().isError() || responseEntity.getBody().length == 0) {
@@ -114,13 +135,23 @@ public class ScheduledTasks {
         Alert alert = responseEntity.getBody()[0];
         if (alert.getActiveAlerts().length == 0) {
 //            return "<green><b>Зараз немає тривоги. </b><br>Попередня була " + convertDate(alert.getLastUpdate() + "</green>");
-            return "\uD83D\uDFE2<b>Зараз немає тривоги. </b>\nПопередня була " + convertDate(alert.getLastUpdate());
+            return "\uD83D\uDFE2<i>Зараз немає тривоги. </i>\nПопередня була " + convertDate(alert.getLastUpdate());
         }
         ActiveAlerts activeAlert = alert.getActiveAlerts()[0];
+        Optional<Regions> byId = regionsRepository.findById(Integer.parseInt(activeAlert.getRegionId()));
+        String regionName = "";
+        if (byId.isPresent()) {
+            regionName = byId.get().getRegionName();
+        }
 //        return "<red>"+activeAlert.getType()+ " " +  convertDate(activeAlert.getLastUpdate()) + "</red>";
-        return "\uD83D\uDD34" + activeAlert.getType() + "\n " + convertDate(activeAlert.getLastUpdate());
+        return "\uD83D\uDD34<b>" + activeAlert.getType() + "</b>\n" + regionName + "\n " + convertDate(activeAlert.getLastUpdate());
     }
 
+    /**
+     * Отримати всі тривоги на теперішній час
+     *
+     * @return
+     */
     private List<Alert> getAlerts() {
         ResponseEntity<Alert[]> responseEntity = restTemplate.exchange("/alerts", HttpMethod.GET, getHeaders(), Alert[].class);
 //        ResponseEntity<String> responseEntity = restTemplate.exchange("/alerts", HttpMethod.GET, getHeaders(), String.class);
@@ -130,6 +161,12 @@ public class ScheduledTasks {
         return Arrays.asList(responseEntity.getBody());
     }
 
+    /**
+     * Знаходить різницю із попереднім станом, зміни відсилає всім хто підписаний на регіон
+     * Зберігає попередній стан
+     *
+     * @param alerts
+     */
     private void setLastAlerts(List<Alert> alerts) {
         //vidbii
         for (Alert alert : lastAlerts) {
@@ -151,9 +188,17 @@ public class ScheduledTasks {
         lastAlerts = alerts;
     }
 
+    /**
+     * відсилає всім хто підписаний на регіон regId або підпорядковані райони
+     * Тобто якщо тривога в Луганській області(16), сповіщення прийде і в районах (84-86) і громадах (801-817)
+     *
+     * @param regId
+     * @param txt
+     */
     private void sendText(String regId, String txt) {
         log.info("{}: {}", regId, txt);
-        List<UserLogin> userLogins = userLoginRepository.findAll();
+//        List<UserLogin> userLogins = userLoginRepository.findAll();
+        List<UserLogin> userLogins = userLoginRepository.findAllInRegion(Integer.parseInt(regId));
         for (UserLogin user : userLogins) {
             if (user.getChatId() != null) {
                 String sendTxt = txt;
@@ -175,6 +220,7 @@ public class ScheduledTasks {
 
             IRegionInfo b = communityRepository.getRegionReqParam(regionId).get(0);
             String bbox = b.getBbox().substring(4, b.getBbox().length() - 1).replace(" ", ",");
+
             log.info(b.getBbox());
             log.info(b.getFid());
 
@@ -192,8 +238,8 @@ public class ScheduledTasks {
                     .addParameter("exceptions", "application/vnd.ogc.se_inimage")
                     .addParameter("FEATUREID", b.getFid())
                     .addParameter("SRS", "EPSG:4326")
-                    .addParameter("WIDTH", "600")
-                    .addParameter("HEIGHT", "600")
+                    .addParameter("HEIGHT", String.valueOf(imgHeight))
+                    .addParameter("WIDTH", String.valueOf((long) (imgHeight * IRegionInfo.calcRatio(bbox))))
                     .addParameter("BBOX", bbox)
                     .build();
             request.setURI(uri);
@@ -202,7 +248,6 @@ public class ScheduledTasks {
             log.info(uri.toString());
 
             response = httpClient.execute(request);
-
 
             org.apache.http.HttpEntity entity = response.getEntity();
 //            BufferedImage img = ImageIO.read(entity.getContent());
@@ -217,27 +262,8 @@ public class ScheduledTasks {
     @Scheduled(fixedRateString = "${alarm.fixedRate}")
     public void reportCurrentTime() {
         try {
-
             if (isLastAlertsStatus()) {
                 setLastAlerts(getAlerts());
-            }
-//        List<Community> communityAlarm = communityRepository.getCommunityAlarm();
-            List<Community> communityAlarm = new ArrayList<>();
-            if (communityAlarm.isEmpty()) {
-                log.info("{}", lastAlertStatus);
-            } else {
-                log.info("{}", communityAlarm.size());
-                List<UserLogin> byHromada = userLoginRepository.findByHromada(communityAlarm);
-                for (UserLogin user : byHromada) {
-                    if (user.getChatId() != null) {
-                        String sendTxt = "Test " + user.getRegion().getRegionName();
-                        messageSender.sendMessage(SendMessage.builder().chatId(user.getChatId()).text(sendTxt).build());
-                    }
-                }
-
-
-//            dsnsBot.
-//                    EditMessageText.builder().build());
             }
         } catch (Exception e) {
             log.error(e.getMessage());

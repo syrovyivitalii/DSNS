@@ -23,13 +23,13 @@ public class Regions {
 
     public String getText(String delimiter) {
         StringJoiner res = new StringJoiner(delimiter);
-        if (state != null) {
-            res.add(state.getRegionName());
-        }
+        res.add("<b>"+getRegionName()+"</b>");
         if (district != null) {
             res.add(district.getRegionName());
         }
-        res.add(getRegionName());
+        if (state != null) {
+            res.add(state.getRegionName());
+        }
         return res.toString();
     }
 }

@@ -156,7 +156,7 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setChatId(String.valueOf(message.getChatId()));
                     Regions region = userLogin.getRegion();
                     sendMessage.setParseMode("html");
-                    sendMessage.setText(region.getText("\n") + "\n" +
+                    sendMessage.setText(region.getText("\n") + "\n\n" +
                             scheduledTasks.getAlert(region.getRegionId().toString()));
 
                     InputStream jpg = scheduledTasks.getJpg(region.getRegionId());

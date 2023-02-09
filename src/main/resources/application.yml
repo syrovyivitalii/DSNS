@@ -8,6 +8,7 @@ alarm:
   key: "c8040565:eae8e82b7f066f0c64effb5b6b1b5d4e"
   fixedRate: 30_000
   geoserver: "http://10.44.64.30:8088/geoserver/topp/wms"
+  imgHeight: 1000
 
 spring:
   main:
