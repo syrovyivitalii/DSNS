@@ -14,7 +14,7 @@ public interface CommunityRepository extends JpaRepository<Community, Integer> {
     @Query(value = "select * from public.community" +
             " where st_contains(geom,st_setsrid(st_point(:x,:y),4326))",nativeQuery = true)
     List<Community> community(double x, double y);
-// TODO: 09.02.23  
+// TODO: 09.02.23
     /**
      * select * from get_sub_region(5)
      *
@@ -29,7 +29,8 @@ public interface CommunityRepository extends JpaRepository<Community, Integer> {
      * @param region_id
      * @return
      */
-    @Query(value = "select st_xmin(geom),st_ymin(geom), st_xmax(geom), st_ymax(geom)  from community where region_id = :region_id",nativeQuery = true)
+//    @Query(value = "select st_xmin(geom),st_ymin(geom), st_xmax(geom), st_ymax(geom)  from community where region_id = :region_id",nativeQuery = true)
+    @Query(value = "select cast(st_extent(geom) as varchar), string_agg(cast (region_id as varchar), ',')  from community where region_id in (select region_id from get_sub_region(:region_id)) ",nativeQuery = true)
     String getRegionBBox(int region_id);
 
 //    @Query(value = "select h from community h where h.alarm is not null")

@@ -21,6 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -160,7 +161,11 @@ public class MessageHandler implements Handler<Message> {
 ////                                .caption(caption)
 ////                                .parseMode(ParseMode.HTML)
 //                            .build();
-                    sendPhoto.setPhoto(new InputFile(scheduledTasks.getJpg(hromada.getId()),"dd"));
+
+                    InputStream jpg = scheduledTasks.getJpg(hromada.getId());
+                    if (jpg != null) {
+                        sendPhoto.setPhoto(new InputFile(jpg,"dd"));
+                    }
 
                     messageSender.sendPhoto(sendPhoto);
                     break;

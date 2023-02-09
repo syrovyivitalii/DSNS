@@ -24,6 +24,9 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -46,6 +49,8 @@ public class ScheduledTasks {
     @Autowired
     RestTemplate restTemplate;
 
+    @PersistenceContext
+    private EntityManager entityManager;
 //    @Autowired
 //    CloseableHttpClient closeableHttpClient;
 
@@ -136,9 +141,25 @@ public class ScheduledTasks {
     }
 
 
+    /**
+     * https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+     * @param regionId
+     * @return
+     */
     public InputStream getJpg(int regionId) {
         try {
             CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+
+
+            String sqlScript = "select cast(st_extent(geom) as varchar), string_agg(cast (region_id as varchar), ',')  from community where region_id in (select region_id from get_sub_region("+regionId+")) ";
+//            String getRegionBBox(int region_id);
+            Query q = entityManager.createNativeQuery(sqlScript);
+            List resultList = q.getResultList();
+            if(resultList.isEmpty()){
+                return null;
+            }
+            Object bb = resultList.get(0);
+
             String repositoryRegionBBox = communityRepository.getRegionBBox(regionId);
 
 //            log.info(new UrlEncodedFormEntity(urlParameters).toString());
@@ -153,7 +174,7 @@ public class ScheduledTasks {
                     .addParameter("FORMAT", "image/png")
                     .addParameter("TRANSPARENT", "true")
                     .addParameter("STYLES", "")
-                    .addParameter("LAYERS", "topp:community")
+                    .addParameter("LAYERS", "topp:community_view")
                     .addParameter("exceptions", "application/vnd.ogc.se_inimage")
                     .addParameter("FEATUREID", "1217")
                     .addParameter("SRS", "EPSG:4326")
