@@ -22,7 +22,7 @@ public class UserLogin {
     private String lastName;
     @ManyToOne
     @JoinColumn(name = "region_id")
-    private Community region;
+    private Regions region;
 
     public UserLogin() {
     }

@@ -21,18 +21,18 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 @Component
@@ -76,6 +76,7 @@ public class ScheduledTasks {
      * @return
      */
     private boolean isLastAlertsStatus() {
+        // TODO: 09.02.23 Зберігати lastAlertStatus в БД або у файлі, щоб після перевантаження
         ResponseEntity<AlertStatus> responseEntity = restTemplate.exchange("/alerts/status", HttpMethod.GET, getHeaders(), AlertStatus.class);
         if (responseEntity.getStatusCode().isError()) {
             return false;
@@ -88,6 +89,23 @@ public class ScheduledTasks {
         return true;
     }
 
+    private String convertDate(String dt) {
+        //yyyy-mm-ddThh:mm:ss.sssZ
+        dt = dt.toLowerCase().replace("t", " ").replace("z", "");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date date = null;
+            // TODO: 09.02.23 Добавити скільки часу триває
+            //Parsing the given String to Date object
+            date = formatter.parse(dt);
+            //dd-MM-yyyy
+            formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+            dt = formatter.format(date);
+        } catch (ParseException e) {
+        }
+        return dt;
+    }
+
     public String getAlert(String regId) {
         ResponseEntity<Alert[]> responseEntity = restTemplate.exchange("/alerts/" + regId, HttpMethod.GET, getHeaders(), Alert[].class);
         if (responseEntity.getStatusCode().isError() || responseEntity.getBody().length == 0) {
@@ -95,10 +113,12 @@ public class ScheduledTasks {
         }
         Alert alert = responseEntity.getBody()[0];
         if (alert.getActiveAlerts().length == 0) {
-            return "Немає тривоги";
+//            return "<green><b>Зараз немає тривоги. </b><br>Попередня була " + convertDate(alert.getLastUpdate() + "</green>");
+            return "\uD83D\uDFE2<b>Зараз немає тривоги. </b>\nПопередня була " + convertDate(alert.getLastUpdate());
         }
         ActiveAlerts activeAlert = alert.getActiveAlerts()[0];
-        return String.format("%s %s", activeAlert.getType(), activeAlert.getLastUpdate());
+//        return "<red>"+activeAlert.getType()+ " " +  convertDate(activeAlert.getLastUpdate()) + "</red>";
+        return "\uD83D\uDD34" + activeAlert.getType() + "\n " + convertDate(activeAlert.getLastUpdate());
     }
 
     private List<Alert> getAlerts() {
@@ -122,7 +142,9 @@ public class ScheduledTasks {
         for (Alert alert : alerts) {
             if (!lastAlerts.contains(alert)) {
 //               "Tr"
-                String txt = String.format("\uD83D\uDD34 %s%n%s", Arrays.stream(alert.getActiveAlerts()).findFirst().get().getType(), alert.getRegionName());
+                String txt = String.format("\uD83D\uDD34 %s%n%s\n%s",
+                        Arrays.stream(alert.getActiveAlerts()).findFirst().get().getType(), alert.getRegionName(),
+                        convertDate(alert.getLastUpdate()));
                 sendText(alert.getRegionId(), txt);
             }
         }
@@ -135,7 +157,7 @@ public class ScheduledTasks {
         for (UserLogin user : userLogins) {
             if (user.getChatId() != null) {
                 String sendTxt = txt;
-                messageSender.sendMessage(SendMessage.builder().chatId(user.getChatId()).text(sendTxt).build());
+                messageSender.sendMessage(SendMessage.builder().chatId(user.getChatId()).parseMode("html").text(sendTxt).build());
             }
         }
     }
@@ -143,6 +165,7 @@ public class ScheduledTasks {
 
     /**
      * https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+     *
      * @param regionId
      * @return
      */
@@ -150,25 +173,16 @@ public class ScheduledTasks {
         try {
             CloseableHttpClient httpClient = HttpClientBuilder.create().build();
 
-
-            String sqlScript = "select cast(st_extent(geom) as varchar), string_agg(cast (region_id as varchar), ',')  from community where region_id in (select region_id from get_sub_region("+regionId+")) ";
-//            String getRegionBBox(int region_id);
-            Query q = entityManager.createNativeQuery(sqlScript);
-            List resultList = q.getResultList();
-            if(resultList.isEmpty()){
-                return null;
-            }
-            Object bb = resultList.get(0);
-
-            String repositoryRegionBBox = communityRepository.getRegionBBox(regionId);
+            IRegionInfo b = communityRepository.getRegionReqParam(regionId).get(0);
+            String bbox = b.getBbox().substring(4, b.getBbox().length() - 1).replace(" ", ",");
+            log.info(b.getBbox());
+            log.info(b.getFid());
 
 //            log.info(new UrlEncodedFormEntity(urlParameters).toString());
 //            HttpGet request = new HttpGet("http://10.44.64.30:8088/geoserver/topp/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=topp%3Acommunity&exceptions=application%2Fvnd.ogc.se_inimage&FEATUREID=978&SRS=EPSG%3A4326&WIDTH=600&HEIGHT=600&BBOX=23.92547607421875%2C49.24346923828125%2C24.74945068359375%2C50.06744384765625");
-//            HttpGet request = new HttpGet("http://10.44.64.30:8088/geoserver/topp/wms");
             HttpGet request = new HttpGet();
-//                    "?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=topp%3Acommunity&exceptions=application%2Fvnd.ogc.se_inimage&FEATUREID=978&SRS=EPSG%3A4326&WIDTH=600&HEIGHT=600&BBOX=23.92547607421875%2C49.24346923828125%2C24.74945068359375%2C50.06744384765625");
             URI uri = new URIBuilder(geoserver)
-                    .addParameter("SERVICE","WMS")
+                    .addParameter("SERVICE", "WMS")
                     .addParameter("VERSION", "1.1.1")
                     .addParameter("REQUEST", "GetMap")
                     .addParameter("FORMAT", "image/png")
@@ -176,22 +190,23 @@ public class ScheduledTasks {
                     .addParameter("STYLES", "")
                     .addParameter("LAYERS", "topp:community_view")
                     .addParameter("exceptions", "application/vnd.ogc.se_inimage")
-                    .addParameter("FEATUREID", "1217")
+                    .addParameter("FEATUREID", b.getFid())
                     .addParameter("SRS", "EPSG:4326")
-                    .addParameter("WIDTH", "768")
-                    .addParameter("HEIGHT", "339")
-                    .addParameter("BBOX", repositoryRegionBBox)
+                    .addParameter("WIDTH", "600")
+                    .addParameter("HEIGHT", "600")
+                    .addParameter("BBOX", bbox)
                     .build();
             request.setURI(uri);
             request.addHeader("content-type", "image/png");
             HttpResponse response = null;
+            log.info(uri.toString());
 
             response = httpClient.execute(request);
 
 
             org.apache.http.HttpEntity entity = response.getEntity();
 //            BufferedImage img = ImageIO.read(entity.getContent());
-            return  entity.getContent();
+            return entity.getContent();
 //            return img;
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
@@ -215,7 +230,7 @@ public class ScheduledTasks {
                 List<UserLogin> byHromada = userLoginRepository.findByHromada(communityAlarm);
                 for (UserLogin user : byHromada) {
                     if (user.getChatId() != null) {
-                        String sendTxt = "Test " + user.getRegion().getCommunity();
+                        String sendTxt = "Test " + user.getRegion().getRegionName();
                         messageSender.sendMessage(SendMessage.builder().chatId(user.getChatId()).text(sendTxt).build());
                     }
                 }

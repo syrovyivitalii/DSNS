@@ -3,6 +3,7 @@ package LDUBGD.DSNS.handlers;
 import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.model.Community;
+import LDUBGD.DSNS.model.Regions;
 import LDUBGD.DSNS.model.UserLogin;
 import LDUBGD.DSNS.repository.*;
 import LDUBGD.DSNS.services.InlineButton;
@@ -37,6 +38,7 @@ public class MessageHandler implements Handler<Message> {
 
     @Autowired
     FirstAidRepository firstAidRepository;
+    @Autowired
     CommunityRepository communityRepository;
 
     @Autowired
@@ -76,20 +78,21 @@ public class MessageHandler implements Handler<Message> {
             userLogin = new UserLogin(userId, message.getChatId());
         } else {
             userLogin = optionalUserLogin.get();
-            if(userLogin.getChatId() == null){
+            if (userLogin.getChatId() == null) {
                 userLogin.setChatId(message.getChatId());
             }
         }
-        if(message.hasLocation()){
+        if (message.hasLocation()) {
             Location location = message.getLocation();
             userLogin.setX(location.getLongitude());
             userLogin.setY(location.getLatitude());
             List<Community> community = communityRepository.community(userLogin.getX(), userLogin.getY());
             SendMessage sendMessage = new SendMessage();
+            // TODO: 09.02.23 Поки що вибирає лише громаду, передбачити можливість вибрати район або область inline button
             sendMessage.setChatId(String.valueOf(message.getChatId()));
             if (!community.isEmpty()) {
                 Community hromada = community.get(0);
-                userLogin.setRegion(hromada);
+                userLogin.setRegion(hromada.getRegionId());
                 sendMessage.setText(String.format("%s%n%s", hromada.getDistrict(), hromada.getCommunity()));
             } else {
                 sendMessage.setText(String.format("Громаду не знайдено (%s:%s)", userLogin.getX(), userLogin.getY()));
@@ -98,7 +101,7 @@ public class MessageHandler implements Handler<Message> {
             log.info(message.getLocation().toString());
             userLoginRepository.save(userLogin);
         }
-        if(message.hasContact()){
+        if (message.hasContact()) {
             Contact contact = message.getContact();
             userLogin.setPhone(contact.getPhoneNumber());
             userLogin.setFirstName(contact.getFirstName());
@@ -128,43 +131,37 @@ public class MessageHandler implements Handler<Message> {
                 case "/start":
                     sendMessage.setText(start.getStart());
                     ReplyKeyboardMarkup keyboardStart;
-                    if (optionalUserLogin.isPresent()){
+                    if (optionalUserLogin.isPresent()) {
                         keyboardStart = start.getKeyboardStart();
-                    }else {
+                    } else {
                         keyboardStart = start.keyboardNewStart();
                     }
                     sendMessage.setReplyMarkup(keyboardStart);
                     break;
 
                 case "Поділитись розташуванням":
-                    log.info("isUserChat :{}",message.getChat().isUserChat());
+                    log.info("isUserChat :{}", message.getChat().isUserChat());
                     sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
                     sendMessage.setReplyMarkup(inlineButton.getInlineLocationKeyboardMarkup());
                     messageSender.sendMessage(sendMessage);
                     break;
                 case "Моя громада":
-                    if (!optionalUserLogin.isPresent()) {
-                        return;
+                    if (!optionalUserLogin.isPresent()
+                            || optionalUserLogin.get().getRegion() == null) {
+                        sendMessage.setText("Ви ще не обрали громаду");
+                        break;
                     } else {
                         userLogin = optionalUserLogin.get();
                     }
                     sendMessage.setChatId(String.valueOf(message.getChatId()));
-                    Community hromada = userLogin.getRegion();
-                    sendMessage.setText(String.format("%s%n%s%n%s",
-                            hromada.getDistrict(),
-                            hromada.getCommunity(),
-                            scheduledTasks.getAlert("351")));
-                    // TODO: 03.02.23 Відображення контурів громади
-//                    SendPhoto sendPhoto = SendPhoto.builder()
-//                            .chatId(user.getChatId())
-//                            .photo(new InputFile(getJpg(),"dd"))
-////                                .caption(caption)
-////                                .parseMode(ParseMode.HTML)
-//                            .build();
+                    Regions region = userLogin.getRegion();
+                    sendMessage.setParseMode("html");
+                    sendMessage.setText(region.getText("\n") + "\n" +
+                            scheduledTasks.getAlert(region.getRegionId().toString()));
 
-                    InputStream jpg = scheduledTasks.getJpg(hromada.getId());
+                    InputStream jpg = scheduledTasks.getJpg(region.getRegionId());
                     if (jpg != null) {
-                        sendPhoto.setPhoto(new InputFile(jpg,"dd"));
+                        sendPhoto.setPhoto(new InputFile(jpg, "dd"));
                     }
 
                     messageSender.sendPhoto(sendPhoto);
@@ -427,7 +424,7 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
                     break;
                 case "Миколаїв":
-                    String dBMykolaiv =  placesOfSupportRepository.getMykolaiv();
+                    String dBMykolaiv = placesOfSupportRepository.getMykolaiv();
                     sendMessage.setText(dBMykolaiv);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
                     break;

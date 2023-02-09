@@ -1,6 +1,7 @@
 package LDUBGD.DSNS.repository;
 
 import LDUBGD.DSNS.model.Community;
+import LDUBGD.DSNS.model.IRegionInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
@@ -26,12 +27,15 @@ public interface CommunityRepository extends JpaRepository<Community, Integer> {
      * 			ST_GeomFromText('LINESTRING(55 75,125 150)'),
      * 				ST_Point(20, 80))
      * 				)) As wktenv;
-     * @param region_id
+     * @param regionId
      * @return
      */
-//    @Query(value = "select st_xmin(geom),st_ymin(geom), st_xmax(geom), st_ymax(geom)  from community where region_id = :region_id",nativeQuery = true)
-    @Query(value = "select cast(st_extent(geom) as varchar), string_agg(cast (region_id as varchar), ',')  from community where region_id in (select region_id from get_sub_region(:region_id)) ",nativeQuery = true)
-    String getRegionBBox(int region_id);
+    @Query(value = "select " +
+            "cast(st_extent(geom) as text) as bbox, " +
+            "string_agg(cast (region_id as text), ',') as fid  " +
+            "from community " +
+            "where region_id in (select region_id from get_sub_region(:regionId)) ", nativeQuery = true)
+    List<IRegionInfo> getRegionReqParam(int regionId);
 
 //    @Query(value = "select h from community h where h.alarm is not null")
 //    List<Community> getHromadyAlarm();
