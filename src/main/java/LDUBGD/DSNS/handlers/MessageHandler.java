@@ -8,7 +8,7 @@ import LDUBGD.DSNS.model.UserLogin;
 import LDUBGD.DSNS.repository.*;
 import LDUBGD.DSNS.services.InlineButton;
 import LDUBGD.DSNS.services.ReplyKeyboard;
-import LDUBGD.DSNS.services.ScheduledTasks;
+import LDUBGD.DSNS.services.UkraineAlarmScheduledTasks;
 import LDUBGD.DSNS.services.Start;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,15 +20,21 @@ import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Component
 @Slf4j
 public class MessageHandler implements Handler<Message> {
+    @Autowired
+    private RegionsRepository regionsRepository;
     @Getter
     private final MessageSender messageSender;
 
@@ -42,7 +48,7 @@ public class MessageHandler implements Handler<Message> {
     CommunityRepository communityRepository;
 
     @Autowired
-    ScheduledTasks scheduledTasks;
+    UkraineAlarmScheduledTasks scheduledTasks;
 
     @Autowired
     ActionInEmergenciesRepository replyKeyboardRepository;
@@ -126,7 +132,6 @@ public class MessageHandler implements Handler<Message> {
             sendPhotoThree.setChatId(String.valueOf(message.getChatId()));
 
             switch (message.getText()) {
-
                 //старт програми
                 case "/start":
                     sendMessage.setText(start.getStart());
@@ -142,29 +147,22 @@ public class MessageHandler implements Handler<Message> {
                 case "Поділитись розташуванням":
                     log.info("isUserChat :{}", message.getChat().isUserChat());
                     sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
-                    sendMessage.setReplyMarkup(inlineButton.getInlineLocationKeyboardMarkup());
-                    messageSender.sendMessage(sendMessage);
+                    InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                    List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+                    List<InlineKeyboardButton> rowLine;
+                    List<Regions> states = regionsRepository.getStates();
+                    for (Regions state : states) {
+                        rowLine = new ArrayList<>();
+                        rowLine.add(InlineKeyboardButton.builder()
+                                .text(state.getRegionName())
+                                .callbackData("regionId:" + state.getRegionId() + ":" + userId).build());
+                        keyboard.add(rowLine);
+                    }
+                    inlineKeyboardMarkup.setKeyboard(keyboard);
+                    sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
                 case "Моя громада":
-                    if (!optionalUserLogin.isPresent()
-                            || optionalUserLogin.get().getRegion() == null) {
-                        sendMessage.setText("Ви ще не обрали громаду");
-                        break;
-                    } else {
-                        userLogin = optionalUserLogin.get();
-                    }
-                    sendMessage.setChatId(String.valueOf(message.getChatId()));
-                    Regions region = userLogin.getRegion();
-                    sendMessage.setParseMode("html");
-                    sendMessage.setText(region.getText("\n") + "\n\n" +
-                            scheduledTasks.getAlert(region.getRegionId().toString()));
-
-                    InputStream jpg = scheduledTasks.getJpg(region.getRegionId());
-                    if (jpg != null) {
-                        sendPhoto.setPhoto(new InputFile(jpg, "dd"));
-                    }
-
-                    messageSender.sendPhoto(sendPhoto);
+                    messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
                     break;
                 //меню
                 case "Меню":
@@ -338,7 +336,8 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setText(dBShelters);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardShelters());
                     break;
-                case "Київ":
+                // TODO: 14.02.23 Перенесено в БД case "Поділитись розташуванням": Чи потрібно?!
+               case "Київ":
                     String dBKyiv = placesOfSupportRepository.getKyiv();
                     sendMessage.setText(dBKyiv);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());

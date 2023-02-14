@@ -10,4 +10,7 @@ import java.util.List;
 public interface RegionsRepository extends JpaRepository<Regions, Integer> {
     @Query(value = "select * from get_sub_region(:a_id)",nativeQuery = true)
     List<Regions> getSubRegion(int a_id);
+
+    @Query(value = "select r from Regions r where r.regionType = 'State' and r.regionId > 0")
+    List<Regions> getStates();
 }

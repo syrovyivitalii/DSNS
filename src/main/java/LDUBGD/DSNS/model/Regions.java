@@ -1,12 +1,14 @@
 package LDUBGD.DSNS.model;
 
 import lombok.Data;
+import org.hibernate.annotations.Proxy;
 
 import javax.persistence.*;
 import java.util.StringJoiner;
 
 @Entity
 @Data
+@Proxy(lazy=false)
 public class Regions {
     @Id
     Integer regionId;

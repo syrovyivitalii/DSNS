@@ -29,13 +29,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 @Slf4j
-public class ScheduledTasks {
+public class UkraineAlarmScheduledTasks {
     @Autowired
     private RegionsRepository regionsRepository;
     @Autowired
@@ -44,15 +49,12 @@ public class ScheduledTasks {
     CommunityRepository communityRepository;
     @Autowired
     MessageSender messageSender;
-    private DSNSBot dsnsBot;
 
     @Autowired
     RestTemplate restTemplate;
 
     @PersistenceContext
     private EntityManager entityManager;
-//    @Autowired
-//    CloseableHttpClient closeableHttpClient;
 
     @Value("${alarm.key}")
     private String alarmKey;
@@ -98,27 +100,39 @@ public class ScheduledTasks {
     }
 
     /**
-     * Перетворює дату з формату yyyy-MM-dd HH:mm:ss у формат dd.MM.yyyy HH:mm:ss
+     * Перетворює дату з формату yyyy-MM-dd HH:mm:ss у формат dd.MM.y
+     * yyy HH:mm:ss
+     * |
      * 2023-02-04 15:35:50 -> 09.02.2023 20:26:38
      *
      * @param dt
+     * @param add
      * @return
      */
-    private String convertDate(String dt) {
+    private String convertDate(String dt, boolean add) {
         //yyyy-mm-ddThh:mm:ss.sssZ
-        dt = dt.toLowerCase().replace("t", " ").replace("z", "");
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String res = "";
         try {
-            Date date = null;
-            // TODO: 09.02.23 Добавити скільки часу триває
             //Parsing the given String to Date object
-            date = formatter.parse(dt);
-            //dd-MM-yyyy
-            formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-            dt = formatter.format(date);
-        } catch (ParseException e) {
+            Instant instant = Instant.parse(dt);
+            if (add) {
+                Duration between = Duration.between(instant, Instant.now());
+                if (between.toDaysPart() > 0) {
+                    res += between.toDaysPart() + " д.";
+                }
+                if (between.toHoursPart() > 0) {
+                    res += between.toHoursPart() + " год.";
+                }
+                res = "\nтриває " + res + between.toMinutesPart() + " хв.";
+            }
+//            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss").withZone(ZoneId.ofOffset("UTC", ZoneOffset.ofHours(timezone)));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
+            res = formatter.format(instant) + res;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            res = dt;
         }
-        return dt;
+        return res;
     }
 
     /**
@@ -135,7 +149,7 @@ public class ScheduledTasks {
         Alert alert = responseEntity.getBody()[0];
         if (alert.getActiveAlerts().length == 0) {
 //            return "<green><b>Зараз немає тривоги. </b><br>Попередня була " + convertDate(alert.getLastUpdate() + "</green>");
-            return "\uD83D\uDFE2<i>Зараз немає тривоги. </i>\nПопередня була " + convertDate(alert.getLastUpdate());
+            return "\uD83D\uDFE2<i>Зараз немає тривоги. </i>\nПопередня закінчилася " + convertDate(alert.getLastUpdate(), false);
         }
         ActiveAlerts activeAlert = alert.getActiveAlerts()[0];
         Optional<Regions> byId = regionsRepository.findById(Integer.parseInt(activeAlert.getRegionId()));
@@ -144,7 +158,7 @@ public class ScheduledTasks {
             regionName = byId.get().getRegionName();
         }
 //        return "<red>"+activeAlert.getType()+ " " +  convertDate(activeAlert.getLastUpdate()) + "</red>";
-        return "\uD83D\uDD34<b>" + activeAlert.getType() + "</b>\n" + regionName + "\n " + convertDate(activeAlert.getLastUpdate());
+        return "\uD83D\uDD34<b>" + activeAlert.getType() + "</b>\n" + regionName + "\n " + convertDate(activeAlert.getLastUpdate(), true);
     }
 
     /**
@@ -181,7 +195,7 @@ public class ScheduledTasks {
 //               "Tr"
                 String txt = String.format("\uD83D\uDD34 %s%n%s\n%s",
                         Arrays.stream(alert.getActiveAlerts()).findFirst().get().getType(), alert.getRegionName(),
-                        convertDate(alert.getLastUpdate()));
+                        convertDate(alert.getLastUpdate(), false));
                 sendText(alert.getRegionId(), txt);
             }
         }
@@ -268,6 +282,5 @@ public class ScheduledTasks {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-
     }
 }

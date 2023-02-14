@@ -86,6 +86,9 @@ public class InlineButton {
     public InlineKeyboardMarkup getInlineTypeOfDeviceKeyboardMarkup(){
         return inlineTypeOfDeviceKeyboardMarkup();
     }
+
+    // TODO: 14.02.23   "Перенесено в БД"
+    @Deprecated(forRemoval = true, since = "Перенесено в БД")
     private InlineKeyboardMarkup inlineLocationKeyboardMarkup(){
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -117,6 +120,7 @@ public class InlineButton {
         inlineKeyboardMarkup.setKeyboard(keyboard);
         return inlineKeyboardMarkup;
     }
+    @Deprecated(forRemoval = true, since = "Перенесено в БД")
     public InlineKeyboardMarkup getInlineLocationKeyboardMarkup(){
         return inlineLocationKeyboardMarkup();
     }
