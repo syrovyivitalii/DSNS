@@ -5,15 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface ServiceRepository extends JpaRepository<Service, Long> {
-    @Query(value = "select manu from first_aid ", nativeQuery = true)
+    @Query(value = "select menu from service ", nativeQuery = true)
     String getMenu();
 
-    @Query(value = "select our_facebook from first_aid ", nativeQuery = true)
+    @Query(value = "select our_facebook from service ", nativeQuery = true)
     String getOurFacebook();
 
-    @Query(value = "select source from first_aid ", nativeQuery = true)
+    @Query(value = "select source from service ", nativeQuery = true)
     String getSource();
 
-    @Query(value = "select actions_after_find_weapons from first_aid ", nativeQuery = true)
+    @Query(value = "select actions_after_find_weapons from service ", nativeQuery = true)
     String getActionsAfterFindWeapons();
 }

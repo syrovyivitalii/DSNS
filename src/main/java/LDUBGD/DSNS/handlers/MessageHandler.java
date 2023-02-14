@@ -2,9 +2,7 @@ package LDUBGD.DSNS.handlers;
 
 import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
-import LDUBGD.DSNS.model.Community;
-import LDUBGD.DSNS.model.Regions;
-import LDUBGD.DSNS.model.UserLogin;
+import LDUBGD.DSNS.model.*;
 import LDUBGD.DSNS.repository.*;
 import LDUBGD.DSNS.services.InlineButton;
 import LDUBGD.DSNS.services.ReplyKeyboard;
@@ -52,6 +50,9 @@ public class MessageHandler implements Handler<Message> {
 
     @Autowired
     ActionInEmergenciesRepository replyKeyboardRepository;
+
+    @Autowired
+    ActionEmergenciesRepository actionEmergenciesRepository;
 
     @Autowired
     PlacesOfSupportRepository placesOfSupportRepository;
@@ -183,70 +184,72 @@ public class MessageHandler implements Handler<Message> {
                     break;
                 //що робити в надзвичайній ситуації
                 case "2":
-                    String dBActionEmergencies = replyKeyboardRepository.getActionEmergencies();
+                    ActionEmergencies actionsEmergencies = actionEmergenciesRepository.getByName("actions_emergencies");
+//                    ActionInEmergencies actionInEmergencies = replyKeyboardRepository.getById(1);
+                    String dBActionEmergencies = actionsEmergencies.getActions();
                     sendMessage.setText(dBActionEmergencies);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardActionInEmergencies());
                     break;
                 //приготуватися в дома
                 case "201":
-                    String dBHome = replyKeyboardRepository.getHome();
+                    String dBHome = replyKeyboardRepository.getHome1();
                     sendMessage.setText(dBHome);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //мінімізація ризику загубитися членам сім'ї
                 case "202":
-                    String dBMinRisk = replyKeyboardRepository.getMinRisk();
+                    String dBMinRisk = replyKeyboardRepository.getMinRisk1();
                     sendMessage.setText(dBMinRisk);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //екстрена валіза
                 case "203":
-                    String dBEmergencySuitcasePartOne = replyKeyboardRepository.getEmergencySuitcasePartOne();
+                    String dBEmergencySuitcasePartOne = replyKeyboardRepository.getEmergencySuitcasePartOne1();
                     sendOtherMessage.setText(dBEmergencySuitcasePartOne);
                     messageSender.sendMessage(sendOtherMessage);
-                    String dBEmergencySuitcasePartTwo = replyKeyboardRepository.getEmergencySuitcasePartTwo();
+                    String dBEmergencySuitcasePartTwo = replyKeyboardRepository.getEmergencySuitcasePartTwo1();
                     sendMessage.setText(dBEmergencySuitcasePartTwo);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //завантажити додаток повітряна тривога
                 case "204":
-                    String dBDownloadAirAlarm = replyKeyboardRepository.getDownloadAirAlarm();
+                    String dBDownloadAirAlarm = replyKeyboardRepository.getDownloadAirAlarm1();
                     sendMessage.setText(dBDownloadAirAlarm);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час сигналу"Увага всім"
                 case "205":
-                    String dBActionsDuringAirAlarm = replyKeyboardRepository.getActionsDuringAirAlarm();
+                    String dBActionsDuringAirAlarm = replyKeyboardRepository.getActionsDuringAirAlarm1();
                     sendMessage.setText(dBActionsDuringAirAlarm);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час війни
                 case "206":
-                    String dBActionsDuringWar = replyKeyboardRepository.getActionsDuringWar();
+                    String dBActionsDuringWar = replyKeyboardRepository.getActionsDuringWar1();
                     sendMessage.setText(dBActionsDuringWar);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час обстрілу стрілецькою зброєю
                 case "207":
-                    String dBActionsDuringShelling = replyKeyboardRepository.getActionsDuringShelling();
+                    String dBActionsDuringShelling = replyKeyboardRepository.getActionsDuringShelling1();
                     sendMessage.setText(dBActionsDuringShelling);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час артобстрілу
                 case "208":
-                    String dBActionsDuringArtilleryShelling = replyKeyboardRepository.getActionsDuringArtilleryShelling();
+                    String dBActionsDuringArtilleryShelling = replyKeyboardRepository.getActionsDuringArtilleryShelling1();
                     sendMessage.setText(dBActionsDuringArtilleryShelling);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //що має бути в аптечці
                 case "209":
-                    String dBFirstAidKit = replyKeyboardRepository.getFirstAidKit();
+                    String dBFirstAidKit = replyKeyboardRepository.getFirstAidKit1();
                     sendMessage.setText(dBFirstAidKit);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дитячий страх
                 case "210":
-                    String dBChildFear = replyKeyboardRepository.getChildFear();
+                    String dBChildFear = replyKeyboardRepository.getChildFear1();
                     sendMessage.setText(dBChildFear);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
@@ -258,13 +261,13 @@ public class MessageHandler implements Handler<Message> {
                     break;
                 //підозрілий предмет чи вибухівка
                 case "212":
-                    String dBExplosiveObject = replyKeyboardRepository.getExplosiveObject();
+                    String dBExplosiveObject = replyKeyboardRepository.getExplosiveObject1();
                     sendMessage.setText(dBExplosiveObject);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //небезпека вибуху
                 case "213":
-                    String dBThreadOfExplosion = replyKeyboardRepository.getThreadOfExplosion();
+                    String dBThreadOfExplosion = replyKeyboardRepository.getThreadOfExplosion1();
                     sendMessage.setText(dBThreadOfExplosion);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
@@ -284,43 +287,43 @@ public class MessageHandler implements Handler<Message> {
                     break;
                 //дії під час обстрілу житлового будинку
                 case "216":
-                    String dBActionsDuringHomeShelling = replyKeyboardRepository.getActionsDuringHomeShelling();
+                    String dBActionsDuringHomeShelling = replyKeyboardRepository.getActionsDuringHomeShelling1();
                     sendMessage.setText(dBActionsDuringHomeShelling);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //карта радіаційного фону
                 case "217":
-                    String dBRadiationMap = replyKeyboardRepository.getRadiationMap();
+                    String dBRadiationMap = replyKeyboardRepository.getRadiationMap1();
                     sendMessage.setText(dBRadiationMap);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії у випадку радіаційної загрози
                 case "218":
-                    String dBActionsDuringRadiationEmergency = replyKeyboardRepository.getActionsDuringRadiationEmergency();
+                    String dBActionsDuringRadiationEmergency = replyKeyboardRepository.getActionsDuringRadiationEmergency1();
                     sendMessage.setText(dBActionsDuringRadiationEmergency);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час хімічної загрози
                 case "219":
-                    String dBChemicalEmergency = replyKeyboardRepository.getChemicalEmergency();
+                    String dBChemicalEmergency = replyKeyboardRepository.getChemicalEmergency1();
                     sendMessage.setText(dBChemicalEmergency);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //дії під час повернення додому після радіаційної небезпеки
                 case "220":
-                    String dBActionsDuringReturnHomeAfterRadiation = replyKeyboardRepository.getReturnHomeAfterRadiation();
+                    String dBActionsDuringReturnHomeAfterRadiation = replyKeyboardRepository.getReturnHomeAfterRadiation1();
                     sendMessage.setText(dBActionsDuringReturnHomeAfterRadiation);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //як не стати жертвою дезінформації
                 case "221":
-                    String dBDisinFormation = replyKeyboardRepository.getDisinFormation();
+                    String dBDisinFormation = replyKeyboardRepository.getDisinFormation1();
                     sendMessage.setText(dBDisinFormation);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
                 //комунікація за відсутності мобільного зв'язку
                 case "222":
-                    String dBCommunication = replyKeyboardRepository.getCommunication();
+                    String dBCommunication = replyKeyboardRepository.getCommunication1();
                     sendMessage.setText(dBCommunication);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
