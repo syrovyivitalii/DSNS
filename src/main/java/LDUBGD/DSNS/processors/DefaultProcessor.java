@@ -2,19 +2,16 @@ package LDUBGD.DSNS.processors;
 
 import LDUBGD.DSNS.handlers.CallbackQueryHandler;
 import LDUBGD.DSNS.handlers.MessageHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 @Component
 public class DefaultProcessor implements Processor {
 
-    private final MessageHandler messageHandler;
-    private final CallbackQueryHandler callbackQueryHandler;
+    private MessageHandler messageHandler;
+    private CallbackQueryHandler callbackQueryHandler;
 
-    public DefaultProcessor(MessageHandler messageHandler, CallbackQueryHandler callbackQueryHandler) {
-        this.messageHandler = messageHandler;
-        this.callbackQueryHandler = callbackQueryHandler;
-    }
 
 
     @Override
@@ -25,5 +22,15 @@ public class DefaultProcessor implements Processor {
     @Override
     public void executeCallBackQuery(CallbackQuery callbackQuery) {
         callbackQueryHandler.choose(callbackQuery);
+    }
+
+    @Autowired
+    public void setMessageHandler(MessageHandler messageHandler) {
+        this.messageHandler = messageHandler;
+    }
+
+    @Autowired
+    public void setCallbackQueryHandler(CallbackQueryHandler callbackQueryHandler) {
+        this.callbackQueryHandler = callbackQueryHandler;
     }
 }

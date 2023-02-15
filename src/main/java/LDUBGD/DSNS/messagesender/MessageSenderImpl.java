@@ -3,7 +3,7 @@ package LDUBGD.DSNS.messagesender;
 import LDUBGD.DSNS.DSNSBot;
 import LDUBGD.DSNS.model.Regions;
 import LDUBGD.DSNS.model.UserLogin;
-import LDUBGD.DSNS.services.UkraineAlarmScheduledTasks;
+import LDUBGD.DSNS.services.UkraineAlarm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,9 +21,8 @@ import java.util.Optional;
 @Slf4j
 public class MessageSenderImpl implements MessageSender {
     private DSNSBot dsnsBot;
-
     @Autowired
-    private UkraineAlarmScheduledTasks ukraineAlarmScheduledTasks;
+    private UkraineAlarm ukraineAlarm;
 
     @Override
     public void sendMessage(SendMessage sendMessage) {
@@ -42,8 +41,9 @@ public class MessageSenderImpl implements MessageSender {
             e.printStackTrace();
         }
     }
+
     @Override
-    public void sendPhoto(SendPhoto sendPhoto){
+    public void sendPhoto(SendPhoto sendPhoto) {
         try {
             dsnsBot.execute(sendPhoto);
         } catch (TelegramApiException e) {
@@ -75,9 +75,9 @@ public class MessageSenderImpl implements MessageSender {
         Regions region02 = userLogin.getRegion();
         sendMessage.setParseMode("html");
         sendMessage.setText(region02.getText("\n") + "\n\n" +
-                ukraineAlarmScheduledTasks.getAlert(region02.getRegionId().toString()));
+                ukraineAlarm.getAlert(region02.getRegionId().toString()));
 
-        InputStream jpg02 = ukraineAlarmScheduledTasks.getJpg(region02.getRegionId());
+        InputStream jpg02 = ukraineAlarm.getJpg(region02.getRegionId());
         if (jpg02 != null) {
             sendPhoto.setPhoto(new InputFile(jpg02, "dd"));
         }

@@ -4,11 +4,9 @@ import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.model.*;
 import LDUBGD.DSNS.repository.*;
-import LDUBGD.DSNS.services.InlineButton;
-import LDUBGD.DSNS.services.ReplyKeyboard;
-import LDUBGD.DSNS.services.UkraineAlarmScheduledTasks;
-import LDUBGD.DSNS.services.Start;
+import LDUBGD.DSNS.services.*;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,9 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,20 +29,18 @@ import java.util.Optional;
 public class MessageHandler implements Handler<Message> {
     @Autowired
     private RegionsRepository regionsRepository;
-    @Getter
-    private final MessageSender messageSender;
+
+    @Autowired
+    @Setter
+    private MessageSender messageSender;
 
     @Autowired
     UserLoginRepository userLoginRepository;
-
 
     @Autowired
     FirstAidRepository firstAidRepository;
     @Autowired
     CommunityRepository communityRepository;
-
-    @Autowired
-    UkraineAlarmScheduledTasks scheduledTasks;
 
     @Autowired
     ActionInEmergenciesRepository replyKeyboardRepository;
@@ -65,10 +59,6 @@ public class MessageHandler implements Handler<Message> {
 
     @Autowired
     ServiceRepository serviceRepository;
-
-    public MessageHandler(MessageSender messageSender) {
-        this.messageSender = messageSender;
-    }
 
     //екземпляри класів
     Start start = new Start();
@@ -340,7 +330,7 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardShelters());
                     break;
                 // TODO: 14.02.23 Перенесено в БД case "Поділитись розташуванням": Чи потрібно?!
-               case "Київ":
+                case "Київ":
                     String dBKyiv = placesOfSupportRepository.getKyiv();
                     sendMessage.setText(dBKyiv);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
