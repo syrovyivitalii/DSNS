@@ -22,6 +22,9 @@ public class ReplyKeyboard {
 
         for (Keyboard keyboard : keyboards) {
             KeyboardButton keyboardButton = new KeyboardButton(keyboard.getKeyboard());
+            if (keyboard.getKeyboard().equals("\uD83D\uDCCD Поділитись розташуванням") || keyboard.getKeyboard().equals("\uD83D\uDCCD Змінити розташування")){
+                keyboardButton.setRequestLocation(true);
+            }
             row.add(keyboardButton);
 
             if (row.size() == keyboard.getButtons_per_row()) {

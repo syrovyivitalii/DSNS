@@ -11,8 +11,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendVideo;
 import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Location;
@@ -21,6 +23,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +43,8 @@ public class MessageHandler implements Handler<Message> {
     private KeyboardRepository keyboardRepository;
     @Autowired
     private PhotoRepository photoRepository;
+    @Autowired
+    private InlineKeyboardRepository inlineKeyboardRepository;
 
     @Autowired
     UserLoginRepository userLoginRepository;
@@ -119,6 +124,7 @@ public class MessageHandler implements Handler<Message> {
             //взаємодія з конкретним чатом
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(String.valueOf(message.getChatId()));
+            sendMessage.setParseMode(ParseMode.HTML);
             SendMessage sendOtherMessage = new SendMessage();
             sendOtherMessage.setChatId(String.valueOf(message.getChatId()));
             //надсилання фото в конкретний чат
@@ -129,6 +135,11 @@ public class MessageHandler implements Handler<Message> {
             sengPhotoTwo.setChatId(String.valueOf(message.getChatId()));
             sendPhotoThree.setChatId(String.valueOf(message.getChatId()));
 
+            SendVideo sendVideo = new SendVideo();
+            sendVideo.setChatId(message.getChatId());
+
+            List<Keyboard> toMenu = keyboardRepository.findByMenu("в меню");
+            String menuName;
             switch (message.getText()) {
                 //старт програми
                 case "/start":
@@ -148,7 +159,138 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setReplyMarkup(keyboard);
 
                     break;
-                case "Поділитись розташуванням":
+                case "\uD83D\uDCD6 Моя громада":
+                    messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
+                    break;
+                //меню
+                case "\uD83D\uDD19 Меню":
+                case "Меню":
+                    Menu menu = menuRepository.findByNameMenu("меню");
+                    sendMessage.setText(menu.getMenu());
+
+                    List<Keyboard> keyboardMenu = keyboardRepository.findByMenu("меню");
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardMenu));
+                    break;
+                // Новини
+                case "1":
+                    Photo photoNews = photoRepository.findByMenu("новини");
+                    sendPhoto.setPhoto(new InputFile(photoNews.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu newsMenu = menuRepository.findByNameMenu("новини");
+                    sendMessage.setText(newsMenu.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+
+                    break;
+                // Боєприпаси
+                case "2":
+                    menuName = "боєприпаси";
+
+                    Photo photoAmmunition = photoRepository.findByMenu(menuName);
+                    sendPhoto.setPhoto(new InputFile(photoAmmunition.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu menuAmmunition = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuAmmunition.getMenu());
+
+                    List<Keyboard> keyboardAmmunition = keyboardRepository.findByMenu(menuName);
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardAmmunition));
+
+                    break;
+                case "\uD83D\uDD14 Мінування":
+                    Menu menuMining = menuRepository.findByNameMenu("мінування");
+                    sendMessage.setText(menuMining.getMenu());
+
+                    List<Keyboard> keyboardMining = keyboardRepository.findByMenu("мінування");
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardMining));
+                    break;
+                case "\uD83D\uDDDE Мапа розмінувань":
+                    menuName = "мапа розмінування";
+                    Photo photoMap = photoRepository.findByMenu(menuName);
+                    sendPhoto.setPhoto(new InputFile(photoMap.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu menuMap = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuMap.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+                    break;
+                case "\uD83D\uDCD6 Читати ще":
+                    Menu typesExplosives = menuRepository.findByNameMenu("види вибухівок");
+                    sendMessage.setText(typesExplosives.getMenu());
+
+                    List<InlineKeyboard> inlineKeyboardExplosives = inlineKeyboardRepository.findByMenu("вибухівка");
+                    sendMessage.setReplyMarkup(inlineButton.createInlineKeyboard(inlineKeyboardExplosives));
+                    break;
+                case "3":
+                    Menu menuSafety = menuRepository.findByNameMenu("безпека");
+                    sendMessage.setText(menuSafety.getMenu());
+
+                    List<Keyboard> keyboardSafety = keyboardRepository.findByMenu("безпека");
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardSafety));
+                    break;
+                case "\uD83C\uDD98 Зона бойових дій":
+                    menuName = "зона бойових дій";
+                    Menu menuWarZone = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuWarZone.getMenu());
+
+                    List<Keyboard> keyboardWarZone = keyboardRepository.findByMenu(menuName);
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardWarZone));
+                    break;
+                case "311":
+                case "314":
+                case "315":
+                case "316":
+                    Photo photo = photoRepository.findByMenu(message.getText());
+                    sendPhoto.setPhoto(new InputFile(photo.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu menuEmergency = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(menuEmergency.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+                    break;
+                case "312":
+                case "313":
+                    Menu menuEmergencies = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(menuEmergencies.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+                    break;
+                case "\uD83E\uDDE9 Для дітей":
+                    menuName = "для дітей";
+                    Menu menuChildren = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuChildren.getMenu());
+
+                    List<Keyboard> keyboardChildren = keyboardRepository.findByMenu(menuName);
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardChildren));
+                    break;
+                case "321":
+                    InputStream videoStream = MessageHandler.class.getClassLoader().getResourceAsStream("video/Дивні знахідки - в чому небезпека_.mp4");
+
+                    sendVideo.setVideo(new InputFile(videoStream,"Дивні знахідки - в чому небезпека_.mp4"));
+                    messageSender.sendVideo(sendVideo);
+
+                    Menu menuForChildren = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(menuForChildren.getMenu());
+
+                    List<Keyboard>  keyboardForChildren = keyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardForChildren));
+                    break;
+                case "6":
+                    menuName = "інспектор";
+                    Photo photoInspector = photoRepository.findByMenu(menuName);
+                    sendPhoto.setPhoto(new InputFile(photoInspector.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu menuInspector = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuInspector.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+                    break;
+                case "\uD83D\uDCCD Поділитись розташуванням":
+                case "\uD83D\uDCCD Змінити розташування":
                     log.info("isUserChat :{}", message.getChat().isUserChat());
                     Menu location = menuRepository.findByNameMenu("поділитись розташуванням");
                     sendMessage.setText(location.getMenu());
@@ -166,46 +308,8 @@ public class MessageHandler implements Handler<Message> {
                     inlineKeyboardMarkup.setKeyboard(keyboardLocation);
                     sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
-                case "Моя громада":
-                    messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
-                    break;
-                //меню
-                case "Меню":
-                    Menu menu = menuRepository.findByNameMenu("меню");
-                    sendMessage.setText(menu.getMenu());
 
-                    List<Keyboard> keyboardMenu = keyboardRepository.findByMenu("меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardMenu));
-                    break;
-                // Новини
-                case "1":
-                    Photo photoNews = photoRepository.findByMenu("новини");
-                    sendPhoto.setPhoto(new InputFile(photoNews.getUrl()));
-                    messageSender.sendPhoto(sendPhoto);
-
-                    Menu newsMenu = menuRepository.findByNameMenu("новини");
-                    sendMessage.setText(newsMenu.getMenu());
-
-                    List<Keyboard> toMenu = keyboardRepository.findByMenu("в меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
-
-                    break;
-                // Боєприпаси
-                case "2":
-                    String menuName = "боєприпаси";
-
-                    Photo photoAmmunition = photoRepository.findByMenu(menuName);
-                    sendPhoto.setPhoto(new InputFile(photoAmmunition.getUrl()));
-                    messageSender.sendPhoto(sendPhoto);
-
-                    Menu menuAmmunition = menuRepository.findByNameMenu(menuName);
-                    sendMessage.setText(menuAmmunition.getMenu());
-
-                    List<Keyboard> keyboardAmmunition = keyboardRepository.findByMenu(menuName);
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardAmmunition));
-
-                    break;
-                //приготуватися в дома
+                    //приготуватися в дома
                 case "201":
                     String dBHome = replyKeyboardRepository.getHome1();
                     sendMessage.setText(dBHome);
@@ -342,12 +446,12 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setText(dBCommunication);
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
                     break;
-                //пункти допомоги населенню
-                case "3":
-                    String dBPlacesOfSupport = placesOfSupportRepository.getSupportPlaces();
-                    sendMessage.setText(dBPlacesOfSupport);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardSupport());
-                    break;
+//                //пункти допомоги населенню
+//                case "3":
+//                    String dBPlacesOfSupport = placesOfSupportRepository.getSupportPlaces();
+//                    sendMessage.setText(dBPlacesOfSupport);
+//                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardSupport());
+//                    break;
                 //укриття
                 case "301":
                     String dBShelters = placesOfSupportRepository.getShelters();
@@ -506,12 +610,12 @@ public class MessageHandler implements Handler<Message> {
                     sendMessage.setText("Натисніть щоб перейти в Меню");
                     sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
                     break;
-                //джерела інформації
-                case "6":
-                    String dBSource = serviceRepository.getSource();
-                    sendMessage.setText(dBSource);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
-                    break;
+//                //джерела інформації
+//                case "6":
+//                    String dBSource = serviceRepository.getSource();
+//                    sendMessage.setText(dBSource);
+//                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
+//                    break;
                 // перша допомога
                 case "7":
                     sendMessage.setText("\uD83E\uDD15 Перша допомога");

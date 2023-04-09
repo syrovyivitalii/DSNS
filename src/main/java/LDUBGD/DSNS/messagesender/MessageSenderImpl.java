@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendVideo;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -82,6 +83,15 @@ public class MessageSenderImpl implements MessageSender {
             sendPhoto.setPhoto(new InputFile(jpg02, "dd"));
         }
         sendPhoto(sendPhoto);
+    }
+
+    @Override
+    public void sendVideo(SendVideo sendVideo) {
+        try {
+            dsnsBot.execute(sendVideo);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Autowired
