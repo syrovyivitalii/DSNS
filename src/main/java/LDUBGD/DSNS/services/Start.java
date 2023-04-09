@@ -8,16 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Start {
-    // /start програми
-    private String start(){
-        String text = "ЗБЕРІГАЙТЕ СПОКІЙ МИ ПОРУЧ\uD83C\uDDFA\uD83C\uDDE6 \n\n Це офіційний Телеграм-бот від ДСНС України. \n\n Щоб розпочати роботу натисніть кнопку нище. ";
-        return text;
-    }
-
-    public String getStart(){
-        return start();
-    }
-
     //клавіатура
     private ReplyKeyboardMarkup keyboardStart(){
         //створюємо клавіатуру

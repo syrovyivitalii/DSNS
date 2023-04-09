@@ -4,8 +4,9 @@ import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.model.*;
 import LDUBGD.DSNS.repository.*;
-import LDUBGD.DSNS.services.*;
-import lombok.Getter;
+import LDUBGD.DSNS.services.InlineButton;
+import LDUBGD.DSNS.services.ReplyKeyboard;
+import LDUBGD.DSNS.services.Start;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,12 @@ public class MessageHandler implements Handler<Message> {
     @Autowired
     @Setter
     private MessageSender messageSender;
+    @Autowired
+    private MenuRepository menuRepository;
+    @Autowired
+    private KeyboardRepository keyboardRepository;
+    @Autowired
+    private PhotoRepository photoRepository;
 
     @Autowired
     UserLoginRepository userLoginRepository;
@@ -125,21 +132,28 @@ public class MessageHandler implements Handler<Message> {
             switch (message.getText()) {
                 //старт програми
                 case "/start":
-                    sendMessage.setText(start.getStart());
-                    ReplyKeyboardMarkup keyboardStart;
-                    if (optionalUserLogin.isPresent()) {
-                        keyboardStart = start.getKeyboardStart();
-                    } else {
-                        keyboardStart = start.keyboardNewStart();
-                    }
-                    sendMessage.setReplyMarkup(keyboardStart);
-                    break;
+                    Menu menuStart = menuRepository.findByNameMenu("старт");
+                    String getMenuStart = menuStart.getMenu();
+                    sendMessage.setText(getMenuStart);
 
+                    List<Keyboard> keyboardFirstStart = keyboardRepository.findByMenu("перший старт");
+                    List<Keyboard> keyboardStart = keyboardRepository.findByMenu("старт");
+                    ReplyKeyboardMarkup keyboard;
+
+                    if (optionalUserLogin.isPresent()) {
+                        keyboard = replyKeyboard.createKeyboard(keyboardStart);
+                    } else {
+                        keyboard = replyKeyboard.createKeyboard(keyboardFirstStart);
+                    }
+                    sendMessage.setReplyMarkup(keyboard);
+
+                    break;
                 case "Поділитись розташуванням":
                     log.info("isUserChat :{}", message.getChat().isUserChat());
-                    sendMessage.setText("Оберіть ваше місцезнаходження із запропонованого переліку областей України \uD83C\uDDFA\uD83C\uDDE6 \uD83D\uDC47");
+                    Menu location = menuRepository.findByNameMenu("поділитись розташуванням");
+                    sendMessage.setText(location.getMenu());
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-                    List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+                    List<List<InlineKeyboardButton>> keyboardLocation = new ArrayList<>();
                     List<InlineKeyboardButton> rowLine;
                     List<Regions> states = regionsRepository.getStates();
                     for (Regions state : states) {
@@ -147,9 +161,9 @@ public class MessageHandler implements Handler<Message> {
                         rowLine.add(InlineKeyboardButton.builder()
                                 .text(state.getRegionName())
                                 .callbackData("regionId:" + state.getRegionId() + ":" + userId).build());
-                        keyboard.add(rowLine);
+                        keyboardLocation.add(rowLine);
                     }
-                    inlineKeyboardMarkup.setKeyboard(keyboard);
+                    inlineKeyboardMarkup.setKeyboard(keyboardLocation);
                     sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
                 case "Моя громада":
@@ -157,28 +171,39 @@ public class MessageHandler implements Handler<Message> {
                     break;
                 //меню
                 case "Меню":
-                    String dBMenu = serviceRepository.getMenu();
-                    sendMessage.setText(dBMenu);
-                    ReplyKeyboardMarkup keyboardMenu = replyKeyboard.getKeyboardMenu();
-                    sendMessage.setReplyMarkup(keyboardMenu);
+                    Menu menu = menuRepository.findByNameMenu("меню");
+                    sendMessage.setText(menu.getMenu());
+
+                    List<Keyboard> keyboardMenu = keyboardRepository.findByMenu("меню");
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardMenu));
                     break;
-                // надзвичайні ситуації в Україні / новини
+                // Новини
                 case "1":
-                case "5":
-                    String dBOurFacebook = serviceRepository.getOurFacebook();
-                    sendOtherMessage.setText(dBOurFacebook);
-                    sendOtherMessage.setReplyMarkup(inlineButton.getInlineFacebookKeyboardMarkup());
-                    messageSender.sendMessage(sendOtherMessage);
-                    sendMessage.setText("Натисніть щоб перейти в Меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
+                    Photo photoNews = photoRepository.findByMenu("новини");
+                    sendPhoto.setPhoto(new InputFile(photoNews.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu newsMenu = menuRepository.findByNameMenu("новини");
+                    sendMessage.setText(newsMenu.getMenu());
+
+                    List<Keyboard> toMenu = keyboardRepository.findByMenu("в меню");
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
+
                     break;
-                //що робити в надзвичайній ситуації
+                // Боєприпаси
                 case "2":
-                    ActionEmergencies actionsEmergencies = actionEmergenciesRepository.getByName("actions_emergencies");
-//                    ActionInEmergencies actionInEmergencies = replyKeyboardRepository.getById(1);
-                    String dBActionEmergencies = actionsEmergencies.getActions();
-                    sendMessage.setText(dBActionEmergencies);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardActionInEmergencies());
+                    String menuName = "боєприпаси";
+
+                    Photo photoAmmunition = photoRepository.findByMenu(menuName);
+                    sendPhoto.setPhoto(new InputFile(photoAmmunition.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    Menu menuAmmunition = menuRepository.findByNameMenu(menuName);
+                    sendMessage.setText(menuAmmunition.getMenu());
+
+                    List<Keyboard> keyboardAmmunition = keyboardRepository.findByMenu(menuName);
+                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardAmmunition));
+
                     break;
                 //приготуватися в дома
                 case "201":
