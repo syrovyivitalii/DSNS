@@ -102,16 +102,10 @@ public class MessageHandler implements Handler<Message> {
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(String.valueOf(message.getChatId()));
             sendMessage.setParseMode(ParseMode.HTML);
-            SendMessage sendOtherMessage = new SendMessage();
-            sendOtherMessage.setChatId(String.valueOf(message.getChatId()));
             //надсилання фото в конкретний чат
             SendPhoto sendPhoto = new SendPhoto();
-            SendPhoto sengPhotoTwo = new SendPhoto();
-            SendPhoto sendPhotoThree = new SendPhoto();
             sendPhoto.setChatId(String.valueOf(message.getChatId()));
-            sengPhotoTwo.setChatId(String.valueOf(message.getChatId()));
-            sendPhotoThree.setChatId(String.valueOf(message.getChatId()));
-
+            //надсилання відео
             SendVideo sendVideo = new SendVideo();
             sendVideo.setChatId(message.getChatId());
 
@@ -141,21 +135,26 @@ public class MessageHandler implements Handler<Message> {
                 case "\uD83D\uDCD6 Моя громада":
                     messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
                     break;
-                //меню
-                case "\uD83D\uDD19 Меню":
-                case "Меню":
-                    nameMenu = menuRepository.findByNameMenu("меню");
-                    sendMessage.setText(nameMenu.getMenu());
 
-                    keyboardMenu = keyboardRepository.findByMenu("меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
-                    break;
                 case "3":
                 case "\uD83D\uDD14 Мінування":
                 case "\uD83C\uDD98 Зона бойових дій":
                 case "\uD83E\uDDE9 Для дітей":
                 case "4":
                 case "⛑ Допомога потерпілим":
+                case "\uD83E\uDEC0\uD83E\uDEC1️ Серцево-легенева реанімація":
+                case "\uD83D\uDD19 Повернутися":
+                case "\uD83E\uDE78 Кровотеча":
+                case "\uD83C\uDFE5 Зовнішня кровотеча":
+                case "⛑ Опіки/Обмороження":
+                case "\uD83E\uDDB4 Травми кісток":
+                case "\uD83D\uDC55 Травми грудної клітки":
+                case "⚠️ Травми хребта":
+                case "\uD83D\uDC81Емоційна підтримка":
+                case "\uD83D\uDC64 Емоційні стани":
+                case "5":
+                case "\uD83D\uDCCB Волонтерам":
+                case "\uD83D\uDCCB Працівникам ДСНС":
                     nameMenu = menuRepository.findByNameMenu(message.getText());
                     sendMessage.setText(nameMenu.getMenu());
 
@@ -177,6 +176,7 @@ public class MessageHandler implements Handler<Message> {
                 case "\uD83E\uDDE9 Форма спілкування":
                 case "\uD83D\uDDDE Мапа розмінувань":
                 case "6":
+                case "\uD83D\uDCCB Алгоритм дій":
                     photo = photoRepository.findByMenu(message.getText());
                     sendPhoto.setPhoto(new InputFile(photo.getUrl()));
                     messageSender.sendPhoto(sendPhoto);
@@ -194,6 +194,17 @@ public class MessageHandler implements Handler<Message> {
                 case "\uD83E\uDDE4 Хімічна загроза":
                 case "\uD83D\uDEDF Заходи безпеки":
                 case "\uD83D\uDCDC Інформованість":
+                case "422":
+                case "423":
+                case "424":
+                case "425":
+                case "511":
+                case "512":
+                case "513":
+                case "514":
+                case "521":
+                case "522":
+                case "523":
                     nameMenu = menuRepository.findByNameMenu(message.getText());
                     sendMessage.setText(nameMenu.getMenu());
 
@@ -205,6 +216,7 @@ public class MessageHandler implements Handler<Message> {
                 case "324":
                 case "325":
                 case "326":
+                case "421":
                     Photo nameOfVideo = photoRepository.findByMenu(message.getText());
                     InputStream videoStream = MessageHandler.class.getClassLoader().getResourceAsStream("video/"+ nameOfVideo.getUrl());
 
@@ -230,6 +242,30 @@ public class MessageHandler implements Handler<Message> {
                     keyboardMenu = keyboardRepository.findByMenu(message.getText());
                     sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
                     break;
+                case "\uD83D\uDC68\uD83C\uDFFC Дорослий":
+                case "\uD83D\uDC66\uD83C\uDFFC Дитина":
+                case "\uD83D\uDC76\uD83C\uDFFC Немовля":
+                case "\uD83C\uDFE5 Внутрішня кровотеча":
+                case "\uD83C\uDFE5 Ампутація кінцівки":
+                case "\uD83E\uDDB5 Кінцівки":
+                case "\uD83D\uDC64 Голова/Шия":
+                case "\uD83E\uDDCD\uD83C\uDFFC\u200D♂️ Живіт":
+                case "\uD83C\uDF21 Термічний опік":
+                case "⚠️ Хімічний опік":
+                case "⚡️ Електричний опік":
+                case "\uD83E\uDD76 Обмороження":
+                case "\uD83D\uDD2B Вогнепальне поранення":
+                case "\uD83D\uDD39Відкритий перелом":
+                case "\uD83D\uDD39Закритий перелом":
+                case "\uD83D\uDD39Вивих":
+                case "\uD83E\uDDE0 Черепно-мозкова травма":
+                case "\uD83D\uDD2A Проникаюча травма":
+                case "⛑ Закрита травма":
+                case "⛑ Безпечне місце":
+                case "⚠️ Небезпечне місце":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+                    break;
                 case "\uD83D\uDCCD Поділитись розташуванням":
                 case "\uD83D\uDCCD Змінити розташування":
                     log.info("isUserChat :{}", message.getChat().isUserChat());
@@ -249,8 +285,15 @@ public class MessageHandler implements Handler<Message> {
                     inlineKeyboardMarkup.setKeyboard(keyboardLocation);
                     sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
+                //меню
+                case "\uD83D\uDD19 Меню":
+                case "Меню":
                 default:
-                    sendMessage.setText("Введено не коректні дані: '" + message.getText() + "' Спробуйте ще раз!");
+                    nameMenu = menuRepository.findByNameMenu("меню");
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    keyboardMenu = keyboardRepository.findByMenu("меню");
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
             }
             //відправлення повідомлення
             messageSender.sendMessage(sendMessage);
