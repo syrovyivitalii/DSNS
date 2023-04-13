@@ -1,18 +1,17 @@
 package LDUBGD.DSNS.handlers;
 
-import LDUBGD.DSNS.inspector.Inspector;
 import LDUBGD.DSNS.messagesender.MessageSender;
 import LDUBGD.DSNS.model.*;
 import LDUBGD.DSNS.repository.*;
 import LDUBGD.DSNS.services.InlineButton;
 import LDUBGD.DSNS.services.ReplyKeyboard;
-import LDUBGD.DSNS.services.Start;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendVideo;
 import org.telegram.telegrambots.meta.api.objects.Contact;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Location;
@@ -21,6 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -28,50 +28,34 @@ import java.util.Optional;
 @Component
 @Slf4j
 public class MessageHandler implements Handler<Message> {
-    @Autowired
-    private RegionsRepository regionsRepository;
-
-    @Autowired
     @Setter
     private MessageSender messageSender;
-    @Autowired
-    private MenuRepository menuRepository;
-    @Autowired
-    private KeyboardRepository keyboardRepository;
-    @Autowired
-    private PhotoRepository photoRepository;
-
-    @Autowired
+    private final RegionsRepository regionsRepository;
+    private final MenuRepository menuRepository;
+    private final KeyboardRepository keyboardRepository;
+    private final PhotoRepository photoRepository;
+    private final InlineKeyboardRepository inlineKeyboardRepository;
+    private final ReplyKeyboard replyKeyboard;
+    private final InlineButton inlineButton;
+    final
     UserLoginRepository userLoginRepository;
-
-    @Autowired
-    FirstAidRepository firstAidRepository;
-    @Autowired
+    final
     CommunityRepository communityRepository;
 
-    @Autowired
-    ActionInEmergenciesRepository replyKeyboardRepository;
+    private static final int MAX_MESSAGE_LENGTH = 4096; // максимальна довжина повідомлення в Telegram
 
-    @Autowired
-    ActionEmergenciesRepository actionEmergenciesRepository;
-
-    @Autowired
-    PlacesOfSupportRepository placesOfSupportRepository;
-
-    @Autowired
-    PsychologicalHelpRepository psychologicalHelpRepository;
-
-    @Autowired
-    VolunteeringRepository volunteeringRepository;
-
-    @Autowired
-    ServiceRepository serviceRepository;
-
-    //екземпляри класів
-    Start start = new Start();
-    ReplyKeyboard replyKeyboard = new ReplyKeyboard();
-    Inspector inspector = new Inspector();
-    InlineButton inlineButton = new InlineButton();
+    public MessageHandler(MessageSender messageSender, RegionsRepository regionsRepository, MenuRepository menuRepository, KeyboardRepository keyboardRepository, PhotoRepository photoRepository, InlineKeyboardRepository inlineKeyboardRepository, ReplyKeyboard replyKeyboard, InlineButton inlineButton, UserLoginRepository userLoginRepository, CommunityRepository communityRepository) {
+        this.messageSender = messageSender;
+        this.regionsRepository = regionsRepository;
+        this.menuRepository = menuRepository;
+        this.keyboardRepository = keyboardRepository;
+        this.photoRepository = photoRepository;
+        this.inlineKeyboardRepository = inlineKeyboardRepository;
+        this.replyKeyboard = replyKeyboard;
+        this.inlineButton = inlineButton;
+        this.userLoginRepository = userLoginRepository;
+        this.communityRepository = communityRepository;
+    }
 
     @Override
     public void choose(Message message) {
@@ -119,21 +103,23 @@ public class MessageHandler implements Handler<Message> {
             //взаємодія з конкретним чатом
             SendMessage sendMessage = new SendMessage();
             sendMessage.setChatId(String.valueOf(message.getChatId()));
-            SendMessage sendOtherMessage = new SendMessage();
-            sendOtherMessage.setChatId(String.valueOf(message.getChatId()));
+            sendMessage.setParseMode(ParseMode.HTML);
             //надсилання фото в конкретний чат
             SendPhoto sendPhoto = new SendPhoto();
-            SendPhoto sengPhotoTwo = new SendPhoto();
-            SendPhoto sendPhotoThree = new SendPhoto();
             sendPhoto.setChatId(String.valueOf(message.getChatId()));
-            sengPhotoTwo.setChatId(String.valueOf(message.getChatId()));
-            sendPhotoThree.setChatId(String.valueOf(message.getChatId()));
+            //надсилання відео
+            SendVideo sendVideo = new SendVideo();
+            sendVideo.setChatId(message.getChatId());
 
+            List<Keyboard> toMenu = keyboardRepository.findByMenu("в меню");
+            Menu nameMenu;
+            List<Keyboard> keyboardMenu;
+            Photo photo;
             switch (message.getText()) {
                 //старт програми
                 case "/start":
-                    Menu menuStart = menuRepository.findByNameMenu("старт");
-                    String getMenuStart = menuStart.getMenu();
+                    nameMenu = menuRepository.findByNameMenu("старт");
+                    String getMenuStart = nameMenu.getMenu();
                     sendMessage.setText(getMenuStart);
 
                     List<Keyboard> keyboardFirstStart = keyboardRepository.findByMenu("перший старт");
@@ -141,17 +127,145 @@ public class MessageHandler implements Handler<Message> {
                     ReplyKeyboardMarkup keyboard;
 
                     if (optionalUserLogin.isPresent()) {
-                        keyboard = replyKeyboard.createKeyboard(keyboardStart);
+                        keyboard = replyKeyboard.getCreateKeyboard(keyboardStart);
                     } else {
-                        keyboard = replyKeyboard.createKeyboard(keyboardFirstStart);
+                        keyboard = replyKeyboard.getCreateKeyboard(keyboardFirstStart);
                     }
                     sendMessage.setReplyMarkup(keyboard);
 
                     break;
-                case "Поділитись розташуванням":
+                case "\uD83D\uDCD6 Моя громада":
+                    messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
+                    break;
+
+                case "3":
+                case "\uD83D\uDD14 Мінування":
+                case "\uD83C\uDD98 Зона бойових дій":
+                case "\uD83E\uDDE9 Для дітей":
+                case "4":
+                case "⛑ Допомога потерпілим":
+                case "\uD83E\uDEC0\uD83E\uDEC1️ Серцево-легенева реанімація":
+                case "\uD83D\uDD19 Повернутися":
+                case "\uD83C\uDFE5 Зовнішня кровотеча":
+                case "⛑ Опіки/Обмороження":
+                case "\uD83E\uDDB4 Травми кісток":
+                case "\uD83D\uDC55 Травми грудної клітки":
+                case "\uD83D\uDC81Емоційна підтримка":
+                case "\uD83D\uDC64 Емоційні стани":
+                case "5":
+                case "\uD83D\uDCCB Волонтерам":
+                case "\uD83D\uDCCB Працівникам ДСНС":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    keyboardMenu = keyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
+                    break;
+                case "\uD83D\uDCD6 Читати ще":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    List<InlineKeyboard> inlineKeyboardExplosives = inlineKeyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(inlineButton.getCreateInlineKeyboard(inlineKeyboardExplosives));
+                    break;
+                case "1":
+                case "311":
+                case "314":
+                case "315":
+                case "316":
+                case "\uD83E\uDDE9 Форма спілкування":
+                case "\uD83D\uDDDE Мапа розмінувань":
+                case "6":
+                case "\uD83D\uDCCB Алгоритм дій":
+                    photo = photoRepository.findByMenu(message.getText());
+                    sendPhoto.setPhoto(new InputFile(photo.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(toMenu));
+                    break;
+                case "312":
+                case "313":
+                case "\uD83C\uDD95 Освоєння звичок":
+                case "\uD83C\uDF92 Підготовленість":
+                case "☢️ Радіація":
+                case "\uD83E\uDDE4 Хімічна загроза":
+                case "\uD83D\uDEDF Заходи безпеки":
+                case "\uD83D\uDCDC Інформованість":
+                case "422":
+                case "423":
+                case "424":
+                case "425":
+                case "511":
+                case "512":
+                case "513":
+                case "514":
+                case "521":
+                case "522":
+                case "523":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(toMenu));
+                    break;
+                case "321":
+                case "322":
+                case "323":
+                case "324":
+                case "325":
+                case "326":
+                case "421":
+                    Photo nameOfVideo = photoRepository.findByMenu(message.getText());
+                    InputStream videoStream = MessageHandler.class.getClassLoader().getResourceAsStream("video/"+ nameOfVideo.getUrl());
+
+                    sendVideo.setVideo(new InputFile(videoStream,nameOfVideo.getUrl()));
+                    messageSender.sendVideo(sendVideo);
+
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(toMenu));
+                    break;
+                case "2":
+                case "\uD83D\uDCCC Розмова з дітьми":
+                case "Більше інформації ➡️":
+                case "\uD83D\uDCAD Забруднення":
+                    photo = photoRepository.findByMenu(message.getText());
+                    sendPhoto.setPhoto(new InputFile(photo.getUrl()));
+                    messageSender.sendPhoto(sendPhoto);
+
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    keyboardMenu = keyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
+                    break;
+                case "\uD83D\uDC68\uD83C\uDFFC Дорослий":
+                case "\uD83D\uDC66\uD83C\uDFFC Дитина":
+                case "\uD83D\uDC76\uD83C\uDFFC Немовля":
+                case "\uD83C\uDF21 Термічний опік":
+                case "⚡️ Електричний опік":
+                case "\uD83E\uDD76 Обмороження":
+                case "\uD83D\uDD39Відкритий перелом":
+                case "\uD83D\uDD39Закритий перелом":
+                case "\uD83D\uDD39Вивих":
+                case "\uD83E\uDDE0 Травма голови":
+                case "\uD83D\uDD2A Проникаюча травма":
+                case "⛑ Закрита травма":
+                case "\uD83D\uDFE5 з рани кінцівки та з можливістю її чіткої візуалізації":
+                case "\uD83D\uDFE7 з рани кінцівки та без можливісті її чіткої візуалізації":
+                case "\uD83D\uDFE8 з рани яка локалізована в пахвових, пахвинних ділянках, сідниць та основи шиї":
+                case "⚠️ Травми хребта":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    sendMessage.setText(nameMenu.getMenu());
+                    break;
+                case "\uD83D\uDCCD Поділитись розташуванням":
+                case "\uD83D\uDCCD Змінити розташування":
                     log.info("isUserChat :{}", message.getChat().isUserChat());
-                    Menu location = menuRepository.findByNameMenu("поділитись розташуванням");
-                    sendMessage.setText(location.getMenu());
+                    nameMenu = menuRepository.findByNameMenu("поділитись розташуванням");
+                    sendMessage.setText(nameMenu.getMenu());
                     InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
                     List<List<InlineKeyboardButton>> keyboardLocation = new ArrayList<>();
                     List<InlineKeyboardButton> rowLine;
@@ -166,611 +280,30 @@ public class MessageHandler implements Handler<Message> {
                     inlineKeyboardMarkup.setKeyboard(keyboardLocation);
                     sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
-                case "Моя громада":
-                    messageSender.sendRegion(sendMessage, sendPhoto, optionalUserLogin);
-                    break;
+                case "\uD83E\uDE78 Кровотеча":
+                case "\uD83D\uDE80ДМД в умовах бойових дій":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    keyboardMenu = keyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
+                    String text = nameMenu.getMenu();
+                    int messageCount = (int) Math.ceil((double) text.length() / MAX_MESSAGE_LENGTH); // calculate the number of messages
+                    for (int i = 0; i < messageCount; i++) {
+                        int startIndex = i * MAX_MESSAGE_LENGTH;
+                        int endIndex = Math.min(startIndex + MAX_MESSAGE_LENGTH, text.length());
+                        String messageText = text.substring(startIndex, endIndex);
+                        sendMessage.setText(messageText);
+                        messageSender.sendMessage(sendMessage);
+                    }
+                    return;
                 //меню
+                case "\uD83D\uDD19 Меню":
                 case "Меню":
-                    Menu menu = menuRepository.findByNameMenu("меню");
-                    sendMessage.setText(menu.getMenu());
-
-                    List<Keyboard> keyboardMenu = keyboardRepository.findByMenu("меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardMenu));
-                    break;
-                // Новини
-                case "1":
-                    Photo photoNews = photoRepository.findByMenu("новини");
-                    sendPhoto.setPhoto(new InputFile(photoNews.getUrl()));
-                    messageSender.sendPhoto(sendPhoto);
-
-                    Menu newsMenu = menuRepository.findByNameMenu("новини");
-                    sendMessage.setText(newsMenu.getMenu());
-
-                    List<Keyboard> toMenu = keyboardRepository.findByMenu("в меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(toMenu));
-
-                    break;
-                // Боєприпаси
-                case "2":
-                    String menuName = "боєприпаси";
-
-                    Photo photoAmmunition = photoRepository.findByMenu(menuName);
-                    sendPhoto.setPhoto(new InputFile(photoAmmunition.getUrl()));
-                    messageSender.sendPhoto(sendPhoto);
-
-                    Menu menuAmmunition = menuRepository.findByNameMenu(menuName);
-                    sendMessage.setText(menuAmmunition.getMenu());
-
-                    List<Keyboard> keyboardAmmunition = keyboardRepository.findByMenu(menuName);
-                    sendMessage.setReplyMarkup(replyKeyboard.createKeyboard(keyboardAmmunition));
-
-                    break;
-                //приготуватися в дома
-                case "201":
-                    String dBHome = replyKeyboardRepository.getHome1();
-                    sendMessage.setText(dBHome);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //мінімізація ризику загубитися членам сім'ї
-                case "202":
-                    String dBMinRisk = replyKeyboardRepository.getMinRisk1();
-                    sendMessage.setText(dBMinRisk);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //екстрена валіза
-                case "203":
-                    String dBEmergencySuitcasePartOne = replyKeyboardRepository.getEmergencySuitcasePartOne1();
-                    sendOtherMessage.setText(dBEmergencySuitcasePartOne);
-                    messageSender.sendMessage(sendOtherMessage);
-                    String dBEmergencySuitcasePartTwo = replyKeyboardRepository.getEmergencySuitcasePartTwo1();
-                    sendMessage.setText(dBEmergencySuitcasePartTwo);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //завантажити додаток повітряна тривога
-                case "204":
-                    String dBDownloadAirAlarm = replyKeyboardRepository.getDownloadAirAlarm1();
-                    sendMessage.setText(dBDownloadAirAlarm);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час сигналу"Увага всім"
-                case "205":
-                    String dBActionsDuringAirAlarm = replyKeyboardRepository.getActionsDuringAirAlarm1();
-                    sendMessage.setText(dBActionsDuringAirAlarm);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час війни
-                case "206":
-                    String dBActionsDuringWar = replyKeyboardRepository.getActionsDuringWar1();
-                    sendMessage.setText(dBActionsDuringWar);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час обстрілу стрілецькою зброєю
-                case "207":
-                    String dBActionsDuringShelling = replyKeyboardRepository.getActionsDuringShelling1();
-                    sendMessage.setText(dBActionsDuringShelling);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час артобстрілу
-                case "208":
-                    String dBActionsDuringArtilleryShelling = replyKeyboardRepository.getActionsDuringArtilleryShelling1();
-                    sendMessage.setText(dBActionsDuringArtilleryShelling);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //що має бути в аптечці
-                case "209":
-                    String dBFirstAidKit = replyKeyboardRepository.getFirstAidKit1();
-                    sendMessage.setText(dBFirstAidKit);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дитячий страх
-                case "210":
-                    String dBChildFear = replyKeyboardRepository.getChildFear1();
-                    sendMessage.setText(dBChildFear);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //обвал будинку
-                case "211":
-                    sendMessage.setText("Що робити, якщо стався  завал у будинку!");
-                    sendPhoto.setPhoto(new InputFile("https://static.nv.ua/shared/system/MediaPhoto/images/000/222/373/medium/7b379024cfba0c0818e24fbff3feca31.png?q=85&stamp=20220304132827&f=jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //підозрілий предмет чи вибухівка
-                case "212":
-                    String dBExplosiveObject = replyKeyboardRepository.getExplosiveObject1();
-                    sendMessage.setText(dBExplosiveObject);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //небезпека вибуху
-                case "213":
-                    String dBThreadOfExplosion = replyKeyboardRepository.getThreadOfExplosion1();
-                    sendMessage.setText(dBThreadOfExplosion);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //центр допомоги біженцям
-                case "214":
-                    sendMessage.setText("❗️\"Гарячі лінії\" та центри допомоги евакуйованим та біженцям");
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    sendPhoto.setPhoto(new InputFile("https://pbs.twimg.com/media/FNEnNKKWQAEkHpM.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //правила поведінки під час комендантської години
-                case "215":
-                    sendMessage.setText("❗️Правила поведінки під час комендантської години");
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    sendPhoto.setPhoto(new InputFile("https://img.tsn.ua/cached/963/tsn-2e5933e84c8f120777c30b7610ecadcd/thumbs/608xX/37/bd/06a999c525133d5802ebabbccfc2bd37.jpeg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //дії під час обстрілу житлового будинку
-                case "216":
-                    String dBActionsDuringHomeShelling = replyKeyboardRepository.getActionsDuringHomeShelling1();
-                    sendMessage.setText(dBActionsDuringHomeShelling);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //карта радіаційного фону
-                case "217":
-                    String dBRadiationMap = replyKeyboardRepository.getRadiationMap1();
-                    sendMessage.setText(dBRadiationMap);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії у випадку радіаційної загрози
-                case "218":
-                    String dBActionsDuringRadiationEmergency = replyKeyboardRepository.getActionsDuringRadiationEmergency1();
-                    sendMessage.setText(dBActionsDuringRadiationEmergency);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час хімічної загрози
-                case "219":
-                    String dBChemicalEmergency = replyKeyboardRepository.getChemicalEmergency1();
-                    sendMessage.setText(dBChemicalEmergency);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //дії під час повернення додому після радіаційної небезпеки
-                case "220":
-                    String dBActionsDuringReturnHomeAfterRadiation = replyKeyboardRepository.getReturnHomeAfterRadiation1();
-                    sendMessage.setText(dBActionsDuringReturnHomeAfterRadiation);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //як не стати жертвою дезінформації
-                case "221":
-                    String dBDisinFormation = replyKeyboardRepository.getDisinFormation1();
-                    sendMessage.setText(dBDisinFormation);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //комунікація за відсутності мобільного зв'язку
-                case "222":
-                    String dBCommunication = replyKeyboardRepository.getCommunication1();
-                    sendMessage.setText(dBCommunication);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnActionInEmergencies());
-                    break;
-                //пункти допомоги населенню
-                case "3":
-                    String dBPlacesOfSupport = placesOfSupportRepository.getSupportPlaces();
-                    sendMessage.setText(dBPlacesOfSupport);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardSupport());
-                    break;
-                //укриття
-                case "301":
-                    String dBShelters = placesOfSupportRepository.getShelters();
-                    sendMessage.setText(dBShelters);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardShelters());
-                    break;
-                // TODO: 14.02.23 Перенесено в БД case "Поділитись розташуванням": Чи потрібно?!
-                case "Київ":
-                    String dBKyiv = placesOfSupportRepository.getKyiv();
-                    sendMessage.setText(dBKyiv);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Київська область":
-                    String dBKyiv_region = placesOfSupportRepository.getKyivRegion();
-                    sendMessage.setText(dBKyiv_region);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Львів":
-                    String dBLviv = placesOfSupportRepository.getLviv();
-                    sendMessage.setText(dBLviv);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Харків":
-                    String dBKharkiv = placesOfSupportRepository.getKharkiv();
-                    sendMessage.setText(dBKharkiv);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Одеса":
-                    String dBOdesa = placesOfSupportRepository.getOdesa();
-                    sendMessage.setText(dBOdesa);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Луцьк":
-                    String dBLutsk = placesOfSupportRepository.getLutsk();
-                    sendMessage.setText(dBLutsk);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Полтава":
-                    String dBPoltava = placesOfSupportRepository.getPoltava();
-                    sendMessage.setText(dBPoltava);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Івано-Франківськ":
-                    String dBIvanofrankivsk = placesOfSupportRepository.getIvanofrankivsk();
-                    sendMessage.setText(dBIvanofrankivsk);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Тернопіль":
-                    String dBTernopil = placesOfSupportRepository.getTernopil();
-                    sendMessage.setText(dBTernopil);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Чернігів":
-                    String dBChernihiv = placesOfSupportRepository.getChernihiv();
-                    sendMessage.setText(dBChernihiv);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Вінниця":
-                    String dBVinnitsa = placesOfSupportRepository.getVinnitsa();
-                    sendMessage.setText(dBVinnitsa);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Рівне":
-                    String dBRivne = placesOfSupportRepository.getRivne();
-                    sendMessage.setText(dBRivne);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Дніпро":
-                    String dBDnipro = placesOfSupportRepository.getDnipro();
-                    sendMessage.setText(dBDnipro);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Житомир":
-                    String dBZhytomyr = placesOfSupportRepository.getZhytomyr();
-                    sendMessage.setText(dBZhytomyr);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Чернівці":
-                    String dBChernivtsi = placesOfSupportRepository.getChernivtsi();
-                    sendMessage.setText(dBChernivtsi);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Запоріжжя":
-                    String dBZaporizhzhia = placesOfSupportRepository.getZaporizhzhia();
-                    sendMessage.setText(dBZaporizhzhia);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Черкаси":
-                    String dBCherkasy = placesOfSupportRepository.getCherkasy();
-                    sendMessage.setText(dBCherkasy);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Миколаїв":
-                    String dBMykolaiv = placesOfSupportRepository.getMykolaiv();
-                    sendMessage.setText(dBMykolaiv);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Кропивницький":
-                    String dBKropyvnytskiy = placesOfSupportRepository.getKropyvnytskiy();
-                    sendMessage.setText(dBKropyvnytskiy);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Суми":
-                    String dBSumy = placesOfSupportRepository.getSumy();
-                    sendMessage.setText(dBSumy);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Ужгород":
-                    String dBUzhhorod = placesOfSupportRepository.getUzhgorod();
-                    sendMessage.setText(dBUzhhorod);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Херсон":
-                    String dBKherson = placesOfSupportRepository.getKherson();
-                    sendMessage.setText(dBKherson);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Хмельницький":
-                    String dBKhmelnytskyi = placesOfSupportRepository.getKhmelnytskyi();
-                    sendMessage.setText(dBKhmelnytskyi);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Донецьк":
-                    String dBDonetsk = placesOfSupportRepository.getDonetsk();
-                    sendMessage.setText(dBDonetsk);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                case "Луганськ":
-                    String dBLuhansk = placesOfSupportRepository.getLuhansk();
-                    sendMessage.setText(dBLuhansk);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                //гуманітарна допомога
-                case "302":
-                    String dBHumanitarianHelp = placesOfSupportRepository.getHumanitarianHelp();
-                    sendMessage.setText(dBHumanitarianHelp);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                //служби розшуку
-                case "303":
-                    String dBSearchService = placesOfSupportRepository.getSearchService();
-                    sendMessage.setText(dBSearchService);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                //лікарі
-                case "304":
-                    String dBDoctors = placesOfSupportRepository.getDoctors();
-                    sendMessage.setText(dBDoctors);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPlacesOfSupport());
-                    break;
-                // погода
-                case "4":
-                    sendOtherMessage.setText("Погода в Україні:");
-                    sendOtherMessage.setReplyMarkup(inlineButton.getInlineWeatherKeyboardMarkup());
-                    messageSender.sendMessage(sendOtherMessage);
-                    sendMessage.setText("Натисніть щоб перейти в Меню");
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
-                    break;
-                //джерела інформації
-                case "6":
-                    String dBSource = serviceRepository.getSource();
-                    sendMessage.setText(dBSource);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
-                    break;
-                // перша допомога
-                case "7":
-                    sendMessage.setText("\uD83E\uDD15 Перша допомога");
-                    ReplyKeyboardMarkup keyboardFirstAidMenu = replyKeyboard.getKeyboardAidMenu();
-                    sendMessage.setReplyMarkup(keyboardFirstAidMenu);
-                    break;
-                case "Серцево-легенева реанімація\uD83E\uDEC0\uD83E\uDEC1️":
-                    String dBCPR = firstAidRepository.getCPR();
-                    sendMessage.setText(dBCPR);
-                    ReplyKeyboardMarkup replyCPRKeyboardMarkup = replyKeyboard.getKeyboardCPR();
-                    sendMessage.setReplyMarkup(replyCPRKeyboardMarkup);
-                    break;
-                case "Дорослий\uD83D\uDC68\uD83C\uDFFC":
-                    String dBCPR_Old = firstAidRepository.getCPR_Old();
-                    sendMessage.setText(dBCPR_Old);
-                    sendPhoto.setPhoto(new InputFile("https://green-way.com.ua/storage/app/media/Yulya/pomosh-pri-dtp/glava4/serdechno-legochnaja-reanimacija-2.png"));
-                    sengPhotoTwo.setPhoto(new InputFile("https://green-way.com.ua/storage/app/media/Yulya/pomosh-pri-dtp/glava4/neprjamoj-massazh-serdca-1.png"));
-                    sendPhotoThree.setPhoto(new InputFile("https://green-way.com.ua/storage/app/media/Yulya/pomosh-pri-dtp/glava4/iskusstvennoe-dyhanie-3.png"));
-                    messageSender.sendPhoto(sendPhoto);
-                    messageSender.sendPhoto(sengPhotoTwo);
-                    messageSender.sendPhoto(sendPhotoThree);
-                    break;
-                case "Дитина\uD83D\uDC66\uD83C\uDFFC":
-                    String dBCPR_Young = firstAidRepository.getCPR_Young();
-                    sendMessage.setText(dBCPR_Young);
-                    break;
-                case "Немовля\uD83D\uDC76\uD83C\uDFFC":
-                    String dBCPR_Baby = firstAidRepository.getCPR_Baby();
-                    sendMessage.setText(dBCPR_Baby);
-                    sendPhoto.setPhoto(new InputFile("https://i0.wp.com/tv5.zp.ua/wp-content/uploads/2019/04/SLR-ditini.jpg?fit=500%2C334&ssl=1"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //кровотеча
-                case "Кровотеча\uD83E\uDE78":
-                    String dBBleeding = firstAidRepository.getBleeding();
-                    sendMessage.setText(dBBleeding);
-                    ReplyKeyboardMarkup keyboardBleeding = replyKeyboard.getKeyboardBleeding();
-                    sendMessage.setReplyMarkup(keyboardBleeding);
-                    break;
-                case "Зовнішня кровотеча\uD83C\uDFE5":
-                    String dBExternalBleeding = firstAidRepository.getExternalBleeding();
-                    sendMessage.setText(dBExternalBleeding);
-                    ReplyKeyboardMarkup keyboardExternalBleeding = replyKeyboard.getKeyboardExternalBleeding();
-                    sendMessage.setReplyMarkup(keyboardExternalBleeding);
-                    break;
-                case "Внутрішня кровотеча\uD83C\uDFE5":
-                    String dBInternalBleeding = firstAidRepository.getInternalBleeding();
-                    sendMessage.setText(dBInternalBleeding);
-                    break;
-                case "Ампутація кінцівки\uD83C\uDFE5":
-                    String dBLimbAmputation = firstAidRepository.getLimbAmputation();
-                    sendMessage.setText(dBLimbAmputation);
-                    break;
-                case "Кінцівки\uD83E\uDDB5":
-                    String dBLimbBleeding = firstAidRepository.getLimbBleeding();
-                    sendMessage.setText(dBLimbBleeding);
-                    break;
-                case "Голова/Шия\uD83D\uDC64":
-                    String dBHeadNeckBleeding = firstAidRepository.getHeadNeckBleeding();
-                    sendMessage.setText(dBHeadNeckBleeding);
-                    sendPhoto.setPhoto(new InputFile("https://green-way.com.ua/storage/app/media/Yulya/pomosh-pri-dtp/glava4/nalozhenie-davjashhej-povjazki-na-sheju.png"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                case "Живіт\uD83E\uDDCD\uD83C\uDFFC\u200D♂️":
-                    String dBBodyBleeding = firstAidRepository.getBodyBleeding();
-                    sendMessage.setText(dBBodyBleeding);
-                    break;
-                //опіки/обмороження
-                case "Опіки/Обмороження⛑":
-                    String dBBurns = firstAidRepository.getBurns();
-                    sendMessage.setText(dBBurns);
-                    ReplyKeyboardMarkup keyboardBurns = replyKeyboard.getKeyboardBurns();
-                    sendMessage.setReplyMarkup(keyboardBurns);
-                    break;
-                case "Термічний опік\uD83C\uDF21":
-                    String dBThermalBurns = firstAidRepository.getThermalBurns();
-                    sendMessage.setText(dBThermalBurns);
-                    break;
-                case "Хімічний опік⚠️":
-                    String dBChemicalBurns = firstAidRepository.getChemicalBurns();
-                    sendMessage.setText(dBChemicalBurns);
-                    break;
-                case "Електричний опік⚡️":
-                    String dBElectricBurns = firstAidRepository.getElectricBurns();
-                    sendMessage.setText(dBElectricBurns);
-                    break;
-                case "Обмороження\uD83E\uDD76":
-                    String burns = firstAidRepository.getBurns();
-                    sendMessage.setText(burns);
-                    break;
-                //вогневе поранення
-                case "Вогнепальне поранення\uD83D\uDD2B":
-                    String dBGunshotWound = firstAidRepository.getGunshotWound();
-                    sendMessage.setText(dBGunshotWound);
-                    //inline повідомлення
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    break;
-                //ЧМТ
-                case "Черепно-мозкова травма\uD83E\uDDE0":
-                    String dBTraumaticBrainInjury = firstAidRepository.getTraumaticBrainInjury();
-                    sendMessage.setText(dBTraumaticBrainInjury);
-                    //inline повідомлення
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    break;
-                //травми кісток
-                case "Травми кісток\uD83E\uDDB4":
-                    String dBBoneInjures = firstAidRepository.getBoneInjuries();
-                    sendMessage.setText(dBBoneInjures);
-                    ReplyKeyboardMarkup keyboardBone = replyKeyboard.getKeyboardBoneInjuries();
-                    sendMessage.setReplyMarkup(keyboardBone);
-                    break;
-                case "\uD83D\uDD39Відкритий перелом":
-                    String dBOpenFracture = firstAidRepository.getOpenFracture();
-                    sendMessage.setText(dBOpenFracture);
-                    break;
-                case "\uD83D\uDD39Закритий перелом":
-                    String dBClosedFracture = firstAidRepository.getClosedFracture();
-                    sendMessage.setText(dBClosedFracture);
-                    break;
-                case "\uD83D\uDD39Вивих":
-                    String dBDislocation = firstAidRepository.getDislocation();
-                    sendMessage.setText(dBDislocation);
-                    break;
-                //травми грудної клітки
-                case "Травми грудної клітки\uD83D\uDC55": {
-                    String dBChestInjury = firstAidRepository.getChestInjury();
-                    sendMessage.setText(dBChestInjury);
-                    ReplyKeyboardMarkup keyboardChest = replyKeyboard.getKeyboardChest();
-                    sendMessage.setReplyMarkup(keyboardChest);
-                    break;
-                }
-                //проникаюча травма
-                case "Проникаюча травма\uD83D\uDD2A":
-                    String dBPenetratingInjury = firstAidRepository.getPenetratingInjury();
-                    sendMessage.setText(dBPenetratingInjury);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    sendPhoto.setPhoto(new InputFile("https://olgrad.kiev.ua/wp-content/uploads/zachem-nuzhna-okkluzivnaya-povyazka.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //закрита травма
-                case "Закрита травма⛑":
-                    String dBClosedInjury = firstAidRepository.getClosedInjury();
-                    sendMessage.setText(dBClosedInjury);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    break;
-                //травма хребта
-                case "Травми хребта⚠️":
-                    String dBSpineInjury = firstAidRepository.getSpineInjury();
-                    sendMessage.setText(dBSpineInjury);
-                    ReplyKeyboardMarkup keyboardSpine = replyKeyboard.getKeyboardSpine();
-                    sendMessage.setReplyMarkup(keyboardSpine);
-                    break;
-                //безпечне місце
-                case "Безпечне місце⛑":
-                    String dBSafelyPlace = firstAidRepository.getSafelyPlace();
-                    sendMessage.setText(dBSafelyPlace);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    sendPhoto.setPhoto(new InputFile("https://adst.mp.pl/s/empendium/img_zoom/B27/23.8-4.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //небезпечне місце
-                case "Небезпечне місце⚠️":
-                    String dBDangerPlace = firstAidRepository.getDangerPlace();
-                    sendMessage.setText(dBDangerPlace);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineCPRKeyboardMarkup());
-                    sendPhoto.setPhoto(new InputFile("https://adst.mp.pl/s/empendium/img_zoom/B27/23.8-4.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    break;
-                //довідник
-                case "Довідник":
-                    sendMessage.setText("Довідник для населення з надання Першої Допомоги");
-                    sendMessage.setReplyMarkup(inlineButton.getInlineDirectoryKeyboardMarkup());
-                    break;
-                //лікар
-                case "Лікар":
-                    String dbDoctors = placesOfSupportRepository.getDoctors();
-                    sendMessage.setText(dbDoctors);
-                    break;
-                //повернутися
-                case "Повернутися⬅":
-                    sendMessage.setText("Що трапилось?");
-                    ReplyKeyboardMarkup keyboardReturn = replyKeyboard.getKeyboardAidMenu();
-                    sendMessage.setReplyMarkup(keyboardReturn);
-                    break;
-                //психологічна допомога
-                case "8":
-                    String dBPsychologicalHelp = psychologicalHelpRepository.getPsychologicalHelp();
-                    sendMessage.setText(dBPsychologicalHelp);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardPsychologicalHelp());
-                    break;
-                //алгоритм надання психологічної допомоги
-                case "80":
-                    String dBAlgorithmPsychologicalHelp = psychologicalHelpRepository.getAlgorithmPsychologicalHelp();
-                    sendPhoto.setPhoto(new InputFile("https://ldn.org.ua/wp-content/uploads/2022/04/111-724x1024.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    sendMessage.setText(dBAlgorithmPsychologicalHelp);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //страх
-                case "81":
-                    String dBFear = psychologicalHelpRepository.getFear();
-                    sendMessage.setText(dBFear);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //плач
-                case "82":
-                    String dBWeep = psychologicalHelpRepository.getWeep();
-                    sendMessage.setText(dBWeep);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //агресія
-                case "83":
-                    String dBAggression = psychologicalHelpRepository.getAggression();
-                    sendMessage.setText(dBAggression);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //паніка
-                case "84":
-                    String dBPanic = psychologicalHelpRepository.getPanic();
-                    sendMessage.setText(dBPanic);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //ступор
-                case "85":
-                    String dBStupor = psychologicalHelpRepository.getStupor();
-                    sendMessage.setText(dBStupor);
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardReturnPsychologicalHelp());
-                    break;
-                //волонтерство
-                case "9":
-                    String dBVolunteering = volunteeringRepository.getVolunteering();
-                    sendPhoto.setPhoto(new InputFile("http://www.visti.rovno.ua/img/650/zapishis-v-dobrovoltsi-z-tsivilnoho-zakhistu-dopom20220425_5166.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    sendOtherMessage.setText("\uD83D\uDC69\u200D\uD83D\uDE92Запишись в добровольці з цивільного захисту - допоможи країні❗️");
-                    sendOtherMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
-                    messageSender.sendMessage(sendOtherMessage);
-                    sendMessage.setText(dBVolunteering);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineVolunteeringKeyboardMarkup());
-                    break;
-                case "Інші питання":
-                    String dBVolunteeringQuestions = volunteeringRepository.getVolunteeringQuestions();
-                    sendMessage.setText(dBVolunteeringQuestions);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineQuestionsKeyboardMarkup());
-                    break;
-                //зброя та боєприпаси: дії після знаходження
-                case "10":
-                    String dBActionsAfterFindWeapons = serviceRepository.getActionsAfterFindWeapons();
-                    sendPhoto.setPhoto(new InputFile("https://mkrada.gov.ua/files/GROMADIANI/1.jpg"));
-                    messageSender.sendPhoto(sendPhoto);
-                    sendMessage.setText(dBActionsAfterFindWeapons);
-                    sendMessage.setReplyMarkup(inlineButton.getInlineWeaponsKeyboardMarkup());
-                    break;
-                //інтерактивний інспектор
-                case "11":
-                    sendMessage.setText(inspector.getInspector());
-                    sendMessage.setReplyMarkup(replyKeyboard.getKeyboardButtonMenu());
-                    break;
                 default:
-                    sendMessage.setText("Введено не коректні дані: '" + message.getText() + "' Спробуйте ще раз!");
+                    nameMenu = menuRepository.findByNameMenu("меню");
+                    sendMessage.setText(nameMenu.getMenu());
+
+                    keyboardMenu = keyboardRepository.findByMenu("меню");
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
             }
             //відправлення повідомлення
             messageSender.sendMessage(sendMessage);
