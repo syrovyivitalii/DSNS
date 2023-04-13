@@ -39,9 +39,11 @@ public class MessageHandler implements Handler<Message> {
     private final InlineButton inlineButton;
     final
     UserLoginRepository userLoginRepository;
-
     final
     CommunityRepository communityRepository;
+
+    private static final int MAX_MESSAGE_LENGTH = 4096; // максимальна довжина повідомлення в Telegram
+
     public MessageHandler(MessageSender messageSender, RegionsRepository regionsRepository, MenuRepository menuRepository, KeyboardRepository keyboardRepository, PhotoRepository photoRepository, InlineKeyboardRepository inlineKeyboardRepository, ReplyKeyboard replyKeyboard, InlineButton inlineButton, UserLoginRepository userLoginRepository, CommunityRepository communityRepository) {
         this.messageSender = messageSender;
         this.regionsRepository = regionsRepository;
@@ -144,12 +146,10 @@ public class MessageHandler implements Handler<Message> {
                 case "⛑ Допомога потерпілим":
                 case "\uD83E\uDEC0\uD83E\uDEC1️ Серцево-легенева реанімація":
                 case "\uD83D\uDD19 Повернутися":
-                case "\uD83E\uDE78 Кровотеча":
                 case "\uD83C\uDFE5 Зовнішня кровотеча":
                 case "⛑ Опіки/Обмороження":
                 case "\uD83E\uDDB4 Травми кісток":
                 case "\uD83D\uDC55 Травми грудної клітки":
-                case "⚠️ Травми хребта":
                 case "\uD83D\uDC81Емоційна підтримка":
                 case "\uD83D\uDC64 Емоційні стани":
                 case "5":
@@ -245,24 +245,19 @@ public class MessageHandler implements Handler<Message> {
                 case "\uD83D\uDC68\uD83C\uDFFC Дорослий":
                 case "\uD83D\uDC66\uD83C\uDFFC Дитина":
                 case "\uD83D\uDC76\uD83C\uDFFC Немовля":
-                case "\uD83C\uDFE5 Внутрішня кровотеча":
-                case "\uD83C\uDFE5 Ампутація кінцівки":
-                case "\uD83E\uDDB5 Кінцівки":
-                case "\uD83D\uDC64 Голова/Шия":
-                case "\uD83E\uDDCD\uD83C\uDFFC\u200D♂️ Живіт":
                 case "\uD83C\uDF21 Термічний опік":
-                case "⚠️ Хімічний опік":
                 case "⚡️ Електричний опік":
                 case "\uD83E\uDD76 Обмороження":
-                case "\uD83D\uDD2B Вогнепальне поранення":
                 case "\uD83D\uDD39Відкритий перелом":
                 case "\uD83D\uDD39Закритий перелом":
                 case "\uD83D\uDD39Вивих":
-                case "\uD83E\uDDE0 Черепно-мозкова травма":
+                case "\uD83E\uDDE0 Травма голови":
                 case "\uD83D\uDD2A Проникаюча травма":
                 case "⛑ Закрита травма":
-                case "⛑ Безпечне місце":
-                case "⚠️ Небезпечне місце":
+                case "\uD83D\uDFE5 з рани кінцівки та з можливістю її чіткої візуалізації":
+                case "\uD83D\uDFE7 з рани кінцівки та без можливісті її чіткої візуалізації":
+                case "\uD83D\uDFE8 з рани яка локалізована в пахвових, пахвинних ділянках, сідниць та основи шиї":
+                case "⚠️ Травми хребта":
                     nameMenu = menuRepository.findByNameMenu(message.getText());
                     sendMessage.setText(nameMenu.getMenu());
                     break;
@@ -285,6 +280,21 @@ public class MessageHandler implements Handler<Message> {
                     inlineKeyboardMarkup.setKeyboard(keyboardLocation);
                     sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                     break;
+                case "\uD83E\uDE78 Кровотеча":
+                case "\uD83D\uDE80ДМД в умовах бойових дій":
+                    nameMenu = menuRepository.findByNameMenu(message.getText());
+                    keyboardMenu = keyboardRepository.findByMenu(message.getText());
+                    sendMessage.setReplyMarkup(replyKeyboard.getCreateKeyboard(keyboardMenu));
+                    String text = nameMenu.getMenu();
+                    int messageCount = (int) Math.ceil((double) text.length() / MAX_MESSAGE_LENGTH); // calculate the number of messages
+                    for (int i = 0; i < messageCount; i++) {
+                        int startIndex = i * MAX_MESSAGE_LENGTH;
+                        int endIndex = Math.min(startIndex + MAX_MESSAGE_LENGTH, text.length());
+                        String messageText = text.substring(startIndex, endIndex);
+                        sendMessage.setText(messageText);
+                        messageSender.sendMessage(sendMessage);
+                    }
+                    return;
                 //меню
                 case "\uD83D\uDD19 Меню":
                 case "Меню":
